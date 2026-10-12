@@ -1,3 +1,7 @@
+/**
+ * Session handling for signed-in students and coordinators.
+ * The cookie stores only a user id; the full user record is loaded from JSON on each request.
+ */
 import { cookies } from "next/headers";
 import { getUserById } from "@/lib/repository";
 import type { User } from "@/lib/types";

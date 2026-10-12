@@ -1,3 +1,7 @@
+/**
+ * Low-level persistence for JSON documents under `data/`.
+ * Repository functions read and write whole files through these helpers.
+ */
 import { mkdir, readFile, rename, writeFile } from "fs/promises";
 import path from "path";
 
@@ -18,5 +22,6 @@ export async function writeJsonFile<T>(filePath: string, value: T): Promise<void
   await ensureParentDirectory(filePath);
   const temporaryPath = `${filePath}.${process.pid}.tmp`;
   await writeFile(temporaryPath, `${JSON.stringify(value, null, 2)}\n`, "utf8");
+  // Replace the live file in one step so a failed write does not corrupt data.
   await rename(temporaryPath, filePath);
 }

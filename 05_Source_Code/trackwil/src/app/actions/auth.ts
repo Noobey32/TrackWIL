@@ -1,5 +1,7 @@
 "use server";
 
+/** Login, logout, and student sign-up; successful auth sets the session cookie and redirects. */
+
 import { randomUUID } from "crypto";
 import { redirect } from "next/navigation";
 import { hashPassword, verifyPassword } from "@/lib/password";

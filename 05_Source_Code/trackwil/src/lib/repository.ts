@@ -1,3 +1,8 @@
+/**
+ * Data access for users, logbook entries, and mentor verification tokens.
+ * Each collection is stored as a single JSON array file; callers load, mutate,
+ * and save the full list (no partial updates at the file level).
+ */
 import {
 	logbookEntriesFilePath,
 	usersFilePath,

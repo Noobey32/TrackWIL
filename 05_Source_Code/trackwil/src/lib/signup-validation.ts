@@ -1,3 +1,7 @@
+/**
+ * Sign-up rules enforced on the server in signupAction.
+ * Returns a user-facing error string, or null when the value is acceptable.
+ */
 const STUDENT_EMAIL_PATTERN = /^(\d{8})@ctucareer\.co\.za$/i;
 
 export function validateStudentSignupEmail(email: string): string | null {

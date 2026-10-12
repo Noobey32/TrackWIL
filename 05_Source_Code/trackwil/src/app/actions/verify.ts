@@ -1,5 +1,10 @@
 "use server";
 
+/**
+ * Public mentor verification: validate token, update entry status, mark token used.
+ * No login; access is limited to a valid, unused, unexpired link.
+ */
+
 import { revalidatePath } from "next/cache";
 import {
   getLogbookEntryById,

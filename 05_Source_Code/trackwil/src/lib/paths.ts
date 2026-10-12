@@ -1,3 +1,4 @@
+/** Paths to JSON data files and uploaded evidence (relative to the Next.js app root). */
 import path from "path";
 
 export const dataDirectory = path.join(process.cwd(), "data");

@@ -1,3 +1,7 @@
+/**
+ * Serves uploaded evidence only when the file is linked to a logbook entry
+ * and the signed-in user is that student or a coordinator/lecturer.
+ */
 import { readFile } from "fs/promises";
 import path from "path";
 import { NextResponse } from "next/server";

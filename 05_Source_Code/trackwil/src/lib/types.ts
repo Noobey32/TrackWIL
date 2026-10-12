@@ -1,5 +1,8 @@
+/** Shared shapes for JSON persistence and UI. */
+
 export type UserRole = 'student' | 'coordinator' | 'lecturer';
 
+/** Entry lifecycle: draft → pending_verification (mentor link) → verified or rejected. */
 export type LogbookEntryStatus =
 	| 'draft'
 	| 'pending_verification'
@@ -29,6 +32,7 @@ export type LogbookEntry = {
 	verifiedAt: string | null;
 };
 
+/** One-time mentor link metadata; used on /verify/[token] without a user account. */
 export type VerificationToken = {
 	token: string;
 	entryId: string;

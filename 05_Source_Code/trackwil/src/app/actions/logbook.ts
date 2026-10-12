@@ -1,5 +1,10 @@
 'use server';
 
+/**
+ * Student logbook actions: create entries (optional evidence upload), then submit for mentor verification.
+ * Submitting issues a token and moves the entry to pending_verification.
+ */
+
 import { randomBytes, randomUUID } from 'crypto';
 import { mkdir, writeFile } from 'fs/promises';
 import path from 'path';

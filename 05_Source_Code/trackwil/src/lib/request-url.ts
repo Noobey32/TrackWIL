@@ -1,3 +1,7 @@
+/**
+ * Builds the public site origin for links emailed or copied to mentors.
+ * Uses proxy headers when deployed behind a reverse proxy.
+ */
 import { headers } from "next/headers";
 
 export async function getAppOrigin(): Promise<string> {

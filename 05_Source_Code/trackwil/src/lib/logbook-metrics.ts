@@ -1,3 +1,6 @@
+/**
+ * Coordinator dashboard helpers: verified hour totals and per-student overview status.
+ */
 import type { LogbookEntry, StudentOverviewStatus } from "@/lib/types";
 
 const OVERDUE_DAYS_WITHOUT_VERIFIED_ENTRY = 14;
@@ -12,6 +15,7 @@ export function studentOverviewStatus(
   entries: LogbookEntry[],
   now: Date = new Date(),
 ): StudentOverviewStatus {
+  // Pending work takes priority, then recency of verified entries, then "on track".
   if (
     entries.some((entry) => entry.status === "pending_verification")
   ) {

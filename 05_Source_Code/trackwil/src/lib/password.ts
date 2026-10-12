@@ -1,3 +1,7 @@
+/**
+ * Password storage uses scrypt with a per-user salt.
+ * Hashes are stored as `salt:derivedKey` in users.json; plain passwords are never saved.
+ */
 import { randomBytes, scryptSync, timingSafeEqual } from "crypto";
 
 const KEY_LENGTH = 64;
