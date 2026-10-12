@@ -11,13 +11,8 @@ export function SignupForm() {
 		null,
 	);
 
-	function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-		event.preventDefault();
-		formAction(new FormData(event.currentTarget));
-	}
-
 	return (
-		<form onSubmit={handleSubmit} className='space-y-4'>
+		<form action={formAction} className='space-y-4'>
 			<div>
 				<label htmlFor='fullName' className='mb-1 block text-sm font-medium'>
 					Full name
