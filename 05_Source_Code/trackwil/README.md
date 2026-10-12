@@ -1,36 +1,45 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# TrackWIL (Next.js)
 
-## Getting Started
+Capstone MVP for WIL logbook tracking: students log hours, mentors verify via a link (no account), coordinators see status at a glance.
 
-First, run the development server:
+## Setup
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Demo accounts (synthetic data)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Role        | Email                       | Password   |
+| ----------- | --------------------------- | ---------- |
+| Student     | student1@ctucareer.co.za    | student123 |
+| Student     | student2@ctucareer.co.za    | student123 |
+| Coordinator | coordinator@ctucareer.co.za | coord123   |
 
-## Learn More
+## Demo flow
 
-To learn more about Next.js, take a look at the following resources:
+1. Sign in as **student1@ctucareer.co.za** and create a logbook entry (optionally upload evidence).
+2. Open the entry and **Submit for verification**, then copy the mentor link.
+3. Open the link in a private window (no login) and approve or reject.
+4. Sign in as **coordinator@ctucareer.co.za** to see student status (on track, awaiting verification, overdue).
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Data storage
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+JSON files in `data/` mirror document collections you could move to MongoDB later:
 
-## Deploy on Vercel
+- `users.json`
+- `logbook_entries.json`
+- `verification_tokens.json`
+- `data/uploads/`: evidence files (ignored by git except `.gitkeep`)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Project layout
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `src/lib/`: types, JSON store, auth session, metrics
+- `src/app/actions/`: server actions (login, logbook, mentor verify)
+- `src/app/student/`: student dashboard and entries
+- `src/app/coordinator/`: coordinator dashboard
+- `src/app/verify/[token]/`: public mentor verification page
+

@@ -1,23 +1,25 @@
 # Capstone Project Source Code
 
 ## Project
-- Project title:
-- Team:
-- Problem:
-- Proposed solution:
+
+- **Title:** TrackWIL: Work-Integrated Learning Management
+- **Team:** Group 3
+- **Problem:** Manual PDF/email logbook tracking loses entries and delays coordinator oversight.
+- **Solution:** Web app with student logbooks, token-based mentor verification, and a coordinator dashboard.
 
 ## Technology Stack
-List frontend, backend, database, cloud/services and tools.
+
+- **Frontend / backend:** Next.js 16 (App Router, TypeScript, Server Actions)
+- **Styling:** Tailwind CSS
+- **Database (local demo):** JSON files in `trackwil/data/`
 
 ## Setup
-1. Clone the repository.
-2. Install dependencies.
-3. Configure environment variables using `.env.example`.
-4. Create/restore the database.
-5. Run the application.
 
-## Repository Expectations
-Use meaningful commits, branches for significant work, pull/merge evidence where applicable, and never commit passwords or secrets.
+1. Clone the repository.
+2. `cd trackwil` and run `npm install`.
+3. Run `npm run dev` and open http://localhost:3000.
+4. Use demo accounts documented in `trackwil/README.md`.
 
 ## Demonstration
-Document test/demo accounts and the feature sequence required for assessment.
+
+See `trackwil/README.md` for demo accounts and the feature sequence (student entry → mentor link → coordinator dashboard).

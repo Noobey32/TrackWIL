@@ -39,3 +39,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local evidence uploads (JSON seed data stays in git)
+/data/uploads/*
+!/data/uploads/.gitkeep

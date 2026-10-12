@@ -1,0 +1,26 @@
+[
+  {
+    "id": "student-1",
+    "fullName": "Dylan Shepard",
+    "email": "student1@ctucareer.co.za",
+    "role": "student",
+    "passwordHash": "1d8a1fa74a0cf655ef89fad7215d8670:20ab83bd1e50567dad529be32cded9996024cba9622847fe0bac013607a8c15924635a8120ee79e3a57c86c54314c87e9877635048d91776d406bdfe8ecdc083",
+    "requiredHours": 200
+  },
+  {
+    "id": "student-2",
+    "fullName": "Sihle Kayise",
+    "email": "student2@ctucareer.co.za",
+    "role": "student",
+    "passwordHash": "1d8a1fa74a0cf655ef89fad7215d8670:20ab83bd1e50567dad529be32cded9996024cba9622847fe0bac013607a8c15924635a8120ee79e3a57c86c54314c87e9877635048d91776d406bdfe8ecdc083",
+    "requiredHours": 200
+  },
+  {
+    "id": "coordinator-1",
+    "fullName": "Amanda Raganya",
+    "email": "coordinator@ctucareer.co.za",
+    "role": "coordinator",
+    "passwordHash": "b5c8c7e4af3d02d63354e220df113974:7eb7dac7110199eb548859e9b40e93847a96caec02fcbd00950b86886de8f96e6b4d503596b91a302a6194b0e0acd05db2c8e34b2e154ef974f0e79481a7c386",
+    "requiredHours": 0
+  }
+]

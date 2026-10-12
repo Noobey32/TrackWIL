@@ -1,0 +1,23 @@
+[
+  {
+    "token": "db96d5c2991469d2f2d05eb6b3626ab73d36dd0e21c1a32d",
+    "entryId": "76a49d9c-237a-4465-ad23-5877814cc6df",
+    "expiresAt": "2026-10-19T12:04:21.474Z",
+    "usedAt": "2026-10-12T12:17:16.182Z",
+    "decision": "approved"
+  },
+  {
+    "token": "455c93084c18010184348301b491dd2a857991d3e7e0cddc",
+    "entryId": "6b2fd4ea-581f-4f05-b4a1-c65a56de1117",
+    "expiresAt": "2026-10-19T12:10:23.225Z",
+    "usedAt": null,
+    "decision": null
+  },
+  {
+    "token": "63150ecf01ffc228e189881fe8f40abd00f7738ebed7e2f6",
+    "entryId": "0b865c43-3d37-44f3-b6a1-12d21223d85c",
+    "expiresAt": "2026-10-19T12:10:56.674Z",
+    "usedAt": null,
+    "decision": null
+  }
+]
