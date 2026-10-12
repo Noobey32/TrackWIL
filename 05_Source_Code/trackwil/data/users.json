@@ -22,5 +22,13 @@
     "role": "coordinator",
     "passwordHash": "b5c8c7e4af3d02d63354e220df113974:7eb7dac7110199eb548859e9b40e93847a96caec02fcbd00950b86886de8f96e6b4d503596b91a302a6194b0e0acd05db2c8e34b2e154ef974f0e79481a7c386",
     "requiredHours": 0
+  },
+  {
+    "id": "student-2d8e765f-a1e3-4af7-8ff1-45000d926566",
+    "fullName": "Moe Green",
+    "email": "20240053@ctucareer.co.za",
+    "role": "student",
+    "passwordHash": "3b6856c00263f798e3642954f30e03a0:f0885a424d51402dd32b0570dc69925ee1a298572b674afb78f5841a7ac9a9f2ddaf20939dd1689298419f8d45d1415e3a3ef6b356086e93b6646f521ab044c0",
+    "requiredHours": 200
   }
 ]

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { LoginForm } from "@/components/login-form";
 import {
@@ -22,6 +23,12 @@ export default async function HomePage() {
           </p>
         </div>
         <LoginForm />
+        <p className="mt-4 text-center text-sm text-zinc-600">
+          New student?{" "}
+          <Link href="/signup" className="font-medium text-zinc-900 underline">
+            Create an account
+          </Link>
+        </p>
         <div className="mt-6 rounded-md bg-zinc-50 p-3 text-xs text-zinc-600">
           <p className="font-medium text-zinc-800">Demo accounts</p>
           <p className="mt-1">student1@ctucareer.co.za / student123</p>

@@ -5,6 +5,7 @@ Capstone MVP for WIL logbook tracking: students log hours, mentors verify via a 
 ## Setup
 
 ```bash
+cd 05_Source_Code\trackwil
 npm install
 npm run dev
 ```
