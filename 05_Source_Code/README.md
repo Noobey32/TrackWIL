@@ -1,6 +1,4 @@
-# Capstone Project Source Code
-
-## Project
+# Project Overview
 
 - **Title:** TrackWIL: Work-Integrated Learning Management
 - **Team:** Group 3
@@ -12,6 +10,7 @@
 - **Frontend / backend:** Next.js 16 (App Router, TypeScript, Server Actions)
 - **Styling:** Tailwind CSS
 - **Database (local demo):** JSON files in `trackwil/data/`
+  - For prduction, MongoDB would be used instead of JSON files
 
 ## Setup
 
