@@ -19,5 +19,12 @@
     "expiresAt": "2026-10-19T12:10:56.674Z",
     "usedAt": null,
     "decision": null
+  },
+  {
+    "token": "6c4b8cf8ca16fb1082f0d371609a2e8d016470087ac1b870",
+    "entryId": "460d1500-5d1f-4015-b2dc-b4c1e45d29e0",
+    "expiresAt": "2026-10-19T13:12:42.009Z",
+    "usedAt": "2026-10-12T13:12:54.501Z",
+    "decision": "approved"
   }
 ]
