@@ -74,7 +74,7 @@
             <mxGeometry height="60" width="40" x="80.5" y="605" as="geometry" />
           </mxCell>
         </UserObject>
-        <UserObject label="Host employer" plantUmlId="actorlbl_11" plantUmlBaseStyle="text;html=1;align=center;verticalAlign=top;fontColor=#000000;fontSize=14;" plantUmlBaseValue="Host employer" id="kjobIyCTlYId68bhhMTq-13">
+        <UserObject label="Mentor" plantUmlId="actorlbl_11" plantUmlBaseStyle="text;html=1;align=center;verticalAlign=top;fontColor=#000000;fontSize=14;" plantUmlBaseValue="Host employer" id="kjobIyCTlYId68bhhMTq-13">
           <mxCell parent="kjobIyCTlYId68bhhMTq-1" style="text;html=1;align=center;verticalAlign=top;fontColor=#000000;fontSize=14;" vertex="1">
             <mxGeometry height="17" width="105" x="48" y="667" as="geometry" />
           </mxCell>
