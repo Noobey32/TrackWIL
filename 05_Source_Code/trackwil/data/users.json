@@ -30,5 +30,13 @@
     "role": "student",
     "passwordHash": "3b6856c00263f798e3642954f30e03a0:f0885a424d51402dd32b0570dc69925ee1a298572b674afb78f5841a7ac9a9f2ddaf20939dd1689298419f8d45d1415e3a3ef6b356086e93b6646f521ab044c0",
     "requiredHours": 200
+  },
+  {
+    "id": "student-c122a892-6d0b-455f-a82d-39832d05e23e",
+    "fullName": "Gedion Basson",
+    "email": "20240268@ctucareer.co.za",
+    "role": "student",
+    "passwordHash": "71666a56383e383bed190431b2d605e1:1413ff4237ea25e78d0949cf754eb67379fff76cfeb8544d2da827b7f6f49c1fade9dc5869a7c512117e9110649e40dafcd5e467387c56b4ac0c57375aa7d182",
+    "requiredHours": 200
   }
 ]
