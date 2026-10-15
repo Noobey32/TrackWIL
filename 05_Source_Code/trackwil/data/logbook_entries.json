@@ -76,5 +76,18 @@
     "createdAt": "2026-10-12T12:10:54.267Z",
     "updatedAt": "2026-10-12T12:10:56.674Z",
     "verifiedAt": null
+  },
+  {
+    "id": "460d1500-5d1f-4015-b2dc-b4c1e45d29e0",
+    "studentId": "student-c122a892-6d0b-455f-a82d-39832d05e23e",
+    "workDate": "2026-10-12",
+    "description": "I built somethings",
+    "hours": 3.5,
+    "evidenceFileName": null,
+    "status": "verified",
+    "mentorEmail": "gedion.basson@gmail.com",
+    "createdAt": "2026-10-12T13:12:34.081Z",
+    "updatedAt": "2026-10-12T13:12:54.501Z",
+    "verifiedAt": "2026-10-12T13:12:54.501Z"
   }
 ]
