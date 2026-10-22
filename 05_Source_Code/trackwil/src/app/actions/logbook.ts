@@ -13,6 +13,7 @@ import { redirect } from 'next/navigation';
 import { uploadsDirectory } from '@/lib/paths';
 import {
 	createLogbookEntry,
+	getActiveVerificationTokenForEntry,
 	getLogbookEntryById,
 	submitEntryForVerification,
 } from '@/lib/repository';
@@ -95,8 +96,19 @@ export async function submitEntryForVerificationAction(entryId: string) {
 	if (!entry || entry.studentId !== user.id) {
 		return { error: 'Entry not found.' };
 	}
-	if (entry.status !== 'draft' && entry.status !== 'rejected') {
-		return { error: 'Only draft or rejected entries can be submitted.' };
+	// A pending entry whose link expired before the mentor responded may be sent again.
+	const isPendingWithoutActiveLink =
+		entry.status === 'pending_verification' &&
+		!(await getActiveVerificationTokenForEntry(entry.id));
+	if (
+		entry.status !== 'draft' &&
+		entry.status !== 'rejected' &&
+		!isPendingWithoutActiveLink
+	) {
+		return {
+			error:
+				'Only draft or rejected entries, or entries whose link has expired, can be submitted.',
+		};
 	}
 	if (!entry.mentorEmail) {
 		return { error: 'Add a mentor email on the entry before submitting.' };

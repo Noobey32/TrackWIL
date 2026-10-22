@@ -1,0 +1,74 @@
+PASS  TC-010  Sign in as student (email in capitals) opens /student
+      actual: redirect=/student; session cookie set
+PASS  TC-011  Wrong password shows an error and creates no session
+      actual: message="Invalid email or password."; cookie not set
+PASS  TC-012  Coordinator and lecturer sign in to /coordinator
+      actual: coordinator -> /coordinator; lecturer -> /coordinator
+PASS  TC-014  Each password rule is enforced at sign-up
+      actual: short1! -> "Password must be at least 8 characters."; lowercase1! -> "Password must include at least one uppercase letter."; UPPERCASE1! -> "Password must include at least one lowercase letter."; NoNumbers!! -> "Password must include at least one number."; NoSpecial12 -> "Password must include at least one special character."
+PASS  TC-015  Non-CTU and malformed student emails are rejected
+      actual: gmail -> "Please use a valid CTU email."; 1999@ctucareer.co.za -> "Please use a valid CTU email."
+PASS  TC-013  Valid sign-up creates a student account and signs in
+      actual: redirect=/student; user row role=student
+PASS  TC-016  Duplicate email (different letter case) is rejected
+      actual: message="An account with this email already exists."
+PASS  TC-017  Signed-out visitor is redirected from /student and /coordinator
+      actual: /student -> 307 /; /coordinator -> 307 /
+PASS  TC-018  Coordinator cannot open the student area
+      actual: status 307; redirected to /coordinator: true
+PASS  TC-019  Student cannot open the coordinator dashboard
+      actual: status 307; redirected to /student: true
+PASS  TC-020  Student cannot view another student's entry
+      actual: status 404; entry text shown: false
+PASS  TC-021  Forged or tampered session cookie is rejected (DEF-01 retest)
+      actual: unsigned 'coordinator-1' -> dashboard shown: false; another user's signature -> dashboard shown: false
+PASS  TC-022  Valid entry is saved as Draft
+      actual: redirect=/student/entries/631b4788-c53e-4eb8-8da2-aeca1b8c00b5; status=draft; hours=4.5
+PASS  TC-023  Invalid hours (30, 0, -2) and empty description are rejected
+      actual: hours=30 desc=yes -> "Hours for one day cannot be more than 24."; hours=0 desc=yes -> "Work date, description, and positive hours are required."; hours=-2 desc=yes -> "Work date, description, and positive hours are required."; hours=5 desc=empty -> "Work date, description, and positive hours are required."
+PASS  TC-024  PNG evidence is accepted and stored under a random name
+      actual: stored as e2f009fa-ad72-418b-99a5-ffad6f2bf8c9.png
+PASS  TC-025  Non-PDF/image evidence (.exe) is rejected
+      actual: message="Evidence must be a PDF or image file."
+PASS  TC-026  Evidence download is limited to the owner and staff
+      actual: owner 200; other student 403; signed out 401; coordinator 200; path traversal attempt 404
+PASS  TC-028  Entry without a mentor email cannot be submitted
+      actual: message="Add a mentor email on the entry before submitting."
+PASS  TC-027  Submitting creates a 48-character link valid for 7 days and sets Pending
+      actual: token length=48; status=pending_verification; expires after 7.00 days
+PASS  TC-029  A pending entry with an active link cannot be submitted again
+      actual: message="Only draft or rejected entries, or entries whose link has expired, can be submitted."; tokens for entry=1
+PASS  TC-020b  Student cannot submit another student's entry
+      actual: message="Entry not found."
+PASS  TC-030  Mentor link shows the entry without sign-in
+      actual: status 200; shows student name, description and Approve/Reject buttons
+PASS  TC-031  Approve sets the entry to Verified and records the time
+      actual: status=verified; verified_at=2026-10-22T22:54:02.000Z
+PASS  TC-033  A used link is refused and the entry is unchanged
+      actual: action -> "This verification link has already been used."; page shows "already used": true; status still verified
+PASS  TC-034  An unknown link is refused
+      actual: action -> "This verification link is invalid."; page status 404
+PASS  TC-035  An expired link is refused and the entry is unchanged
+      actual: action -> "This verification link has expired."; page mentions expiry: true; status pending_verification
+PASS  TC-032  Reject sets Rejected; the student can resubmit for a new link
+      actual: after reject: rejected; resubmitted with new link: true; status now pending_verification
+PASS  TC-036  Two simultaneous approvals on one link record only one decision
+      actual: successful decisions=1; second response "This verification link has already been used."; token decision=approved
+PASS  TC-037  Pending entry whose link expired can be resubmitted (DEF-02 retest)
+      actual: page shows expiry notice and Submit button: true; resubmitted with new link: true; status pending_verification
+PASS  TC-038  Logbook lists statuses and verified hours against required hours
+      actual: expected "12.5 of 200 verified hours"; statuses shown: Draft, Pending verification, Verified
+PASS  TC-039  Dashboard shows each student's status, hours and pending count
+      actual: Dylan=On track; Moe=Overdue; Sihle=Awaiting verification; Gedion=Awaiting verification
+PASS  TC-040  Timestamps are recorded automatically
+      actual: created 2026-10-22T22:54:01.841Z; verified 2026-10-22T22:54:02.000Z; link used 2026-10-22T22:54:02.000Z (approved)
+PASS  TC-041  Sign out removes the session and returns to sign-in
+      actual: redirect=/; cookie cleared: true; /student afterwards -> 307
+PASS  TC-042  Passwords are stored only as salted scrypt hashes
+      actual: stored value format: <32 hex salt>:<128 hex key>; plain password present: false
+PASS  TC-043  Database constraints reject invalid data
+      actual: hours = 30: rejected (CHECK constraint failed); unknown status: rejected (CHECK constraint failed); entry for missing student: rejected (FOREIGN KEY constraint failed); unknown role: rejected (CHECK constraint failed); duplicate email (case): rejected (UNIQUE constraint failed); token used without decision: rejected (CHECK constraint failed)
+PASS  TC-044  Pages and actions respond within 2 seconds (10 requests each)
+      actual: / avg 3 ms, max 4 ms; /student avg 5 ms, max 9 ms; /student/entries/new avg 4 ms, max 5 ms; /coordinator avg 4 ms, max 6 ms; /verify/<token> avg 4 ms, max 5 ms; create entry 20 ms
+
+36 automated tests: 36 passed, 0 failed
