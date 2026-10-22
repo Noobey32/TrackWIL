@@ -43,3 +43,8 @@ next-env.d.ts
 # local evidence uploads (JSON seed data stays in git)
 /data/uploads/*
 !/data/uploads/.gitkeep
+
+# SQLite database (rebuilt from database/schema.sql + seed.sql on first run)
+/data/*.db
+/data/*.db-wal
+/data/*.db-shm

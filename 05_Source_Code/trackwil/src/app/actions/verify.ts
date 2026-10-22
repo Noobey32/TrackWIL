@@ -8,11 +8,8 @@
 import { revalidatePath } from "next/cache";
 import {
   getLogbookEntryById,
-  getLogbookEntries,
   getVerificationToken,
-  getVerificationTokens,
-  saveLogbookEntries,
-  saveVerificationTokens,
+  recordMentorDecision,
 } from "@/lib/repository";
 
 export async function mentorDecisionAction(
@@ -35,25 +32,14 @@ export async function mentorDecisionAction(
     return { error: "The linked logbook entry could not be found." };
   }
 
-  const now = new Date().toISOString();
-  const entries = await getLogbookEntries();
-  const entryIndex = entries.findIndex((item) => item.id === entry.id);
-  entries[entryIndex] = {
-    ...entry,
-    status: decision === "approved" ? "verified" : "rejected",
-    updatedAt: now,
-    verifiedAt: decision === "approved" ? now : entry.verifiedAt,
-  };
-  await saveLogbookEntries(entries);
-
-  const tokens = await getVerificationTokens();
-  const tokenIndex = tokens.findIndex((item) => item.token === tokenValue);
-  tokens[tokenIndex] = {
-    ...token,
-    usedAt: now,
+  const recorded = await recordMentorDecision(
+    tokenValue,
     decision,
-  };
-  await saveVerificationTokens(tokens);
+    new Date().toISOString(),
+  );
+  if (!recorded) {
+    return { error: "This verification link has already been used." };
+  }
 
   revalidatePath("/coordinator");
   revalidatePath(`/verify/${tokenValue}`);

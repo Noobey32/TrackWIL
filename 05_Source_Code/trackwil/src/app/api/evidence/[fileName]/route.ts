@@ -7,7 +7,7 @@ import path from "path";
 import { NextResponse } from "next/server";
 import { uploadsDirectory } from "@/lib/paths";
 import { getCurrentUser } from "@/lib/session";
-import { getLogbookEntries } from "@/lib/repository";
+import { getLogbookEntryByEvidenceFileName } from "@/lib/repository";
 
 export async function GET(
   _request: Request,
@@ -20,10 +20,7 @@ export async function GET(
 
   const { fileName } = await context.params;
   const safeName = path.basename(fileName);
-  const entries = await getLogbookEntries();
-  const linkedEntry = entries.find(
-    (entry) => entry.evidenceFileName === safeName,
-  );
+  const linkedEntry = await getLogbookEntryByEvidenceFileName(safeName);
 
   if (!linkedEntry) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });

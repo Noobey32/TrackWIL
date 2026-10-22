@@ -12,11 +12,9 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { uploadsDirectory } from '@/lib/paths';
 import {
+	createLogbookEntry,
 	getLogbookEntryById,
-	getLogbookEntries,
-	getVerificationTokens,
-	saveLogbookEntries,
-	saveVerificationTokens,
+	submitEntryForVerification,
 } from '@/lib/repository';
 import { getCurrentUser } from '@/lib/session';
 import type { LogbookEntry, VerificationToken } from '@/lib/types';
@@ -49,6 +47,9 @@ export async function createLogbookEntryAction(formData: FormData) {
 			error: 'Work date, description, and positive hours are required.',
 		};
 	}
+	if (hoursValue > 24) {
+		return { error: 'Hours for one day cannot be more than 24.' };
+	}
 
 	let evidenceFileName: string | null = null;
 	const evidenceFile = formData.get('evidence');
@@ -78,9 +79,7 @@ export async function createLogbookEntryAction(formData: FormData) {
 		verifiedAt: null,
 	};
 
-	const entries = await getLogbookEntries();
-	entries.push(newEntry);
-	await saveLogbookEntries(entries);
+	await createLogbookEntry(newEntry);
 
 	revalidatePath('/student');
 	redirect(`/student/entries/${newEntry.id}`);
@@ -116,18 +115,7 @@ export async function submitEntryForVerificationAction(entryId: string) {
 		decision: null,
 	};
 
-	const tokens = await getVerificationTokens();
-	tokens.push(verificationToken);
-	await saveVerificationTokens(tokens);
-
-	const entries = await getLogbookEntries();
-	const entryIndex = entries.findIndex((item) => item.id === entryId);
-	entries[entryIndex] = {
-		...entry,
-		status: 'pending_verification',
-		updatedAt: now.toISOString(),
-	};
-	await saveLogbookEntries(entries);
+	await submitEntryForVerification(verificationToken, now.toISOString());
 
 	revalidatePath('/student');
 	revalidatePath(`/student/entries/${entryId}`);

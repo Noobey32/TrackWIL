@@ -5,7 +5,7 @@
 import { randomUUID } from "crypto";
 import { redirect } from "next/navigation";
 import { hashPassword, verifyPassword } from "@/lib/password";
-import { getUserByEmail, getUsers, saveUsers } from "@/lib/repository";
+import { createUser, getUserByEmail } from "@/lib/repository";
 import {
   validateSignupPassword,
   validateStudentSignupEmail,
@@ -73,8 +73,7 @@ export async function signupAction(formData: FormData) {
     requiredHours: 200,
   };
 
-  const users = await getUsers();
-  await saveUsers([...users, newUser]);
+  await createUser(newUser);
 
   await setSessionUser(newUser.id);
   redirect(dashboardPathForRole(newUser.role));
