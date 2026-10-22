@@ -39,7 +39,7 @@ export default async function CoordinatorDashboardPage() {
 				</p>
 			</div>
 
-			<section className='overflow-hidden rounded-lg border border-zinc-200 bg-white'>
+			<section className='overflow-x-auto rounded-lg border border-zinc-200 bg-white'>
 				<table className='min-w-full text-left text-sm'>
 					<thead className='border-b border-zinc-200 bg-zinc-50 text-zinc-600'>
 						<tr>

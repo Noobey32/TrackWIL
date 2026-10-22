@@ -26,13 +26,15 @@ export default async function LogbookEntryDetailPage({
     notFound();
   }
 
-  const canSubmit =
-    entry.status === "draft" || entry.status === "rejected";
-
   const activeToken =
     entry.status === "pending_verification"
       ? await getActiveVerificationTokenForEntry(entry.id)
       : undefined;
+
+  // A pending entry whose link has expired can be submitted again for a new link.
+  const linkExpired = entry.status === "pending_verification" && !activeToken;
+  const canSubmit =
+    entry.status === "draft" || entry.status === "rejected" || linkExpired;
   const appOrigin = activeToken ? await getAppOrigin() : null;
 
   return (
@@ -71,6 +73,12 @@ export default async function LogbookEntryDetailPage({
           </p>
         ) : null}
       </section>
+
+      {linkExpired ? (
+        <p className="rounded-md border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+          The verification link for this entry has expired. Submit it again to get a new link.
+        </p>
+      ) : null}
 
       {canSubmit ? <SubmitForVerification entryId={entry.id} /> : null}
 

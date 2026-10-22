@@ -49,7 +49,11 @@ VALUES
      strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-3 days'), strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-2 days'), strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-2 days')),
     ('entry-6', 'student-c122a892-6d0b-455f-a82d-39832d05e23e', date('now', '-2 days'),
      'Helped at the front desk.', 9, NULL, 'rejected', 'mentor@host.co.za',
-     strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-2 days'), strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-1 days'), NULL);
+     strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-2 days'), strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-1 days'), NULL),
+    -- Submitted 10 days ago; the mentor never responded and the link has expired (can be resubmitted)
+    ('entry-7', 'student-c122a892-6d0b-455f-a82d-39832d05e23e', date('now', '-10 days'),
+     'Prepared the monthly stock report.', 5, NULL, 'pending_verification', 'mentor@host.co.za',
+     strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-10 days'), strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-10 days'), NULL);
 
 INSERT INTO verification_tokens (token, entry_id, expires_at, used_at, decision) VALUES
     ('a1f3c9e0b7d24e6f8a5c1b3d9e7f2a4c6b8d0e1f3a5c7b9d', 'entry-1',
@@ -64,4 +68,7 @@ INSERT INTO verification_tokens (token, entry_id, expires_at, used_at, decision)
     ('e5b7d9f1c3e5a7b9d1f3c5e7a9b1d3f5c7e9a1b3d5f7c9e1', '460d1500-5d1f-4015-b2dc-b4c1e45d29e0',
      strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '+4 days'), strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-2 days'), 'approved'),
     ('f6a8c0e2d4f6b8d0a2c4e6f8b0d2a4c6e8f0b2d4a6c8e0f2', 'entry-6',
-     strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '+5 days'), strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-1 days'), 'rejected');
+     strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '+5 days'), strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-1 days'), 'rejected'),
+    -- Expired, never used: /verify/a7b9c1d3e5f7a9b1c3d5e7f9a1b3c5d7e9f1a3b5c7d9e1f3 shows "expired"
+    ('a7b9c1d3e5f7a9b1c3d5e7f9a1b3c5d7e9f1a3b5c7d9e1f3', 'entry-7',
+     strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-3 days'), NULL, NULL);

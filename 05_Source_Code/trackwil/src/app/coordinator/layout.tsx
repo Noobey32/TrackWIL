@@ -18,7 +18,7 @@ export default async function CoordinatorLayout({
   return (
     <div className="flex flex-1 flex-col">
       <AppHeader user={user} />
-      <main className="mx-auto max-w-5xl px-4 py-8">{children}</main>
+      <main className="mx-auto w-full max-w-5xl px-4 py-8">{children}</main>
     </div>
   );
 }

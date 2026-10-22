@@ -23,6 +23,8 @@ Open [http://localhost:3000](http://localhost:3000).
 | Coordinator | coordinator@ctucareer.co.za | coord123   |
 | Lecturer    | lecturer@ctucareer.co.za    | lecturer123 |
 
+Sessions are signed with a secret from `TRACKWIL_SESSION_SECRET`, or a random secret generated once into `data/session-secret` (ignored by git).
+
 ## Demo flow
 
 1. Sign in as **student1@ctucareer.co.za** and create a logbook entry (optionally upload evidence).
@@ -48,6 +50,17 @@ npm run db:reset
 ```
 
 The `data/*.json` files are the original prototype storage from the first sprint. They are kept for reference and are no longer read by the app.
+
+## Testing
+
+The system test suite (TC-010 to TC-044 in the Test Cases workbook) runs against a running app and the database:
+
+```bash
+npm run build
+npm start                         # terminal 1
+npm run test:system               # terminal 2 (pass a URL if not http://localhost:3000)
+npm run db:reset                  # afterwards: the tests add entries to the database
+```
 
 ## Project layout
 

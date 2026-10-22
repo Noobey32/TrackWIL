@@ -48,3 +48,7 @@ next-env.d.ts
 /data/*.db
 /data/*.db-wal
 /data/*.db-shm
+
+# Session signing secret (generated on first run)
+/data/session-secret
+/tests/last-results.json
