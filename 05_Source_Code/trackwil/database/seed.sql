@@ -97,3 +97,32 @@ INSERT INTO verification_tokens (token, entry_id, expires_at, used_at, decision)
     -- Expired, never used: /verify/a7b9c1d3e5f7a9b1c3d5e7f9a1b3c5d7e9f1a3b5c7d9e1f3 shows "expired"
     ('a7b9c1d3e5f7a9b1c3d5e7f9a1b3c5d7e9f1a3b5c7d9e1f3', 'entry-7',
      strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-3 days'), NULL, NULL);
+
+-- Uploaded WIL documents. The files are synthetic PDFs from database/demo-documents/,
+-- copied into data/uploads/documents/ when the database is seeded.
+-- Dylan's WIL 2 paperwork is complete; WIL 1 is missing later attendance registers;
+-- Sihle has only uploaded the MOU; Moe and Gedion have uploaded nothing yet.
+-- A semester is written as e.g. 2026-S2 (S1 = January to June, S2 = July to December).
+INSERT INTO placement_documents
+    (id, placement_id, document_type, semester, original_file_name, stored_file_name, file_size, uploaded_at)
+VALUES
+    ('document-1', 'placement-dylan-2', 'mou', NULL,
+     'MOU - Harbour Admin Solutions.pdf', 'demo-dylan-wil2-mou.pdf', 1087, strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-29 days')),
+    ('document-2', 'placement-dylan-2', 'commencement_letter', NULL,
+     'Commencement letter.pdf', 'demo-dylan-wil2-commencement.pdf', 1079, strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-29 days')),
+    ('document-3', 'placement-dylan-2', 'code_of_conduct', NULL,
+     'Signed code of conduct.pdf', 'demo-dylan-wil2-conduct.pdf', 1075, strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-28 days')),
+    ('document-4', 'placement-dylan-2', 'attendance_register',
+     strftime('%Y', 'now') || '-S' || CASE WHEN CAST(strftime('%m', 'now') AS INTEGER) <= 6 THEN '1' ELSE '2' END,
+     'Attendance register.pdf', 'demo-dylan-wil2-register.pdf', 1079, strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-2 days')),
+    ('document-5', 'placement-dylan-1', 'mou', NULL,
+     'MOU - Cape Legal Services.pdf', 'demo-dylan-wil1-mou.pdf', 1083, strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-239 days')),
+    ('document-6', 'placement-dylan-1', 'commencement_letter', NULL,
+     'Commencement letter.pdf', 'demo-dylan-wil1-commencement.pdf', 1075, strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-239 days')),
+    ('document-7', 'placement-dylan-1', 'code_of_conduct', NULL,
+     'Code of conduct.pdf', 'demo-dylan-wil1-conduct.pdf', 1071, strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-238 days')),
+    ('document-8', 'placement-dylan-1', 'attendance_register',
+     strftime('%Y', 'now', '-240 days') || '-S' || CASE WHEN CAST(strftime('%m', 'now', '-240 days') AS INTEGER) <= 6 THEN '1' ELSE '2' END,
+     'Attendance register.pdf', 'demo-dylan-wil1-register.pdf', 1075, strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-200 days')),
+    ('document-9', 'placement-sihle-1', 'mou', NULL,
+     'MOU.pdf', 'demo-sihle-wil1-mou.pdf', 1084, strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-25 days'));

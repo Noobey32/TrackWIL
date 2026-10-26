@@ -1,0 +1,2 @@
+# Keep the demo PDFs byte-for-byte (seed.sql records their sizes).
+*.pdf binary

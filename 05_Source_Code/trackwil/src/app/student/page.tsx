@@ -1,6 +1,11 @@
 import Link from 'next/link';
 import { HoursProgress } from '@/components/hours-progress';
-import { getEntriesForStudent, getPlacementsForStudent } from '@/lib/repository';
+import { documentProgress } from '@/lib/documents';
+import {
+	getDocumentsForStudent,
+	getEntriesForStudent,
+	getPlacementsForStudent,
+} from '@/lib/repository';
 import { sumVerifiedHours } from '@/lib/logbook-metrics';
 import { getCurrentUser } from '@/lib/session';
 
@@ -12,6 +17,7 @@ export default async function StudentDashboardPage() {
 
 	const placements = await getPlacementsForStudent(user.id);
 	const entries = await getEntriesForStudent(user.id);
+	const documents = await getDocumentsForStudent(user.id);
 
 	return (
 		<div className='space-y-8'>
@@ -43,6 +49,7 @@ export default async function StudentDashboardPage() {
 						const placementEntries = entries.filter(
 							(entry) => entry.placementId === placement.id,
 						);
+						const paperwork = documentProgress(placement, documents);
 						return (
 							<Link
 								key={placement.id}
@@ -63,7 +70,10 @@ export default async function StudentDashboardPage() {
 								/>
 								<p className='text-xs text-zinc-500'>
 									{placementEntries.length}{' '}
-									{placementEntries.length === 1 ? 'entry' : 'entries'}
+									{placementEntries.length === 1 ? 'entry' : 'entries'} ·
+									documents {paperwork.uploadedOnce} of{' '}
+									{paperwork.requiredOnce} · attendance registers{' '}
+									{paperwork.uploadedRegisters} of {paperwork.expectedRegisters}
 								</p>
 							</Link>
 						);

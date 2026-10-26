@@ -2,6 +2,7 @@
 
 import { useActionState } from 'react';
 import { createLogbookEntryAction } from '@/app/actions/logbook';
+import { maxDocumentBytes } from '@/lib/documents';
 import type { WilPlacement } from '@/lib/types';
 
 export function NewEntryForm({
@@ -13,6 +14,11 @@ export function NewEntryForm({
 }) {
 	const [state, formAction, isPending] = useActionState(
 		async (_previousState: { error?: string } | null, formData: FormData) => {
+			// Checked here first so an oversized file is never sent to the server.
+			const evidence = formData.get('evidence');
+			if (evidence instanceof File && evidence.size > maxDocumentBytes) {
+				return { error: 'Evidence files cannot be larger than 10 MB.' };
+			}
 			return createLogbookEntryAction(formData);
 		},
 		null,
@@ -93,7 +99,7 @@ export function NewEntryForm({
 			</div>
 			<div>
 				<label htmlFor='evidence' className='mb-1 block text-sm font-medium'>
-					Evidence (optional)
+					Evidence (optional, up to 10 MB)
 				</label>
 				<input
 					id='evidence'
