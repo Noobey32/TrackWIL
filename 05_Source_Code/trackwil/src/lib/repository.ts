@@ -1,18 +1,32 @@
 /**
- * Data access for users, logbook entries, and mentor verification tokens.
+ * Data access for users, WIL placements, logbook entries, and mentor verification tokens.
  * Backed by SQLite (see database/schema.sql); columns are aliased to the
  * camelCase shapes in types.ts so callers never deal with SQL rows directly.
  */
 import { getDatabase, inTransaction } from '@/lib/db';
-import type { LogbookEntry, User, VerificationToken } from '@/lib/types';
+import type {
+	LogbookEntry,
+	User,
+	VerificationToken,
+	WilPlacement,
+} from '@/lib/types';
 
 const userColumns = `id, full_name AS fullName, email, role,
-	password_hash AS passwordHash, required_hours AS requiredHours`;
+	password_hash AS passwordHash`;
 
-const entryColumns = `id, student_id AS studentId, work_date AS workDate,
-	description, hours, evidence_file_name AS evidenceFileName, status,
-	mentor_email AS mentorEmail, created_at AS createdAt,
-	updated_at AS updatedAt, verified_at AS verifiedAt`;
+const placementColumns = `id, student_id AS studentId, title,
+	company_name AS companyName, required_hours AS requiredHours,
+	start_date AS startDate, created_at AS createdAt, updated_at AS updatedAt`;
+
+// Entries do not store the student; it is read from the entry's placement.
+const entryColumns = `e.id, e.placement_id AS placementId, p.student_id AS studentId,
+	e.work_date AS workDate, e.description, e.hours,
+	e.evidence_file_name AS evidenceFileName, e.status,
+	e.mentor_email AS mentorEmail, e.created_at AS createdAt,
+	e.updated_at AS updatedAt, e.verified_at AS verifiedAt`;
+
+const entryTables = `logbook_entries e
+	JOIN wil_placements p ON p.id = e.placement_id`;
 
 const tokenColumns = `token, entry_id AS entryId, expires_at AS expiresAt,
 	used_at AS usedAt, decision`;
@@ -39,22 +53,82 @@ export async function getUserById(userId: string): Promise<User | undefined> {
 export async function createUser(user: User): Promise<void> {
 	getDatabase()
 		.prepare(
-			`INSERT INTO users (id, full_name, email, role, password_hash, required_hours)
-			VALUES (?, ?, ?, ?, ?, ?)`,
+			`INSERT INTO users (id, full_name, email, role, password_hash)
+			VALUES (?, ?, ?, ?, ?)`,
+		)
+		.run(user.id, user.fullName, user.email, user.role, user.passwordHash);
+}
+
+export async function getPlacements(): Promise<WilPlacement[]> {
+	return getDatabase()
+		.prepare(`SELECT ${placementColumns} FROM wil_placements`)
+		.all() as unknown as WilPlacement[];
+}
+
+/** A student's placements, the most recently started first. */
+export async function getPlacementsForStudent(
+	studentId: string,
+): Promise<WilPlacement[]> {
+	return getDatabase()
+		.prepare(
+			`SELECT ${placementColumns} FROM wil_placements
+			WHERE student_id = ? ORDER BY start_date DESC, created_at DESC`,
+		)
+		.all(studentId) as unknown as WilPlacement[];
+}
+
+export async function getPlacementById(
+	placementId: string,
+): Promise<WilPlacement | undefined> {
+	return getDatabase()
+		.prepare(`SELECT ${placementColumns} FROM wil_placements WHERE id = ?`)
+		.get(placementId) as unknown as WilPlacement | undefined;
+}
+
+export async function createPlacement(placement: WilPlacement): Promise<void> {
+	getDatabase()
+		.prepare(
+			`INSERT INTO wil_placements (id, student_id, title, company_name,
+				required_hours, start_date, created_at, updated_at)
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
 		)
 		.run(
-			user.id,
-			user.fullName,
-			user.email,
-			user.role,
-			user.passwordHash,
-			user.requiredHours,
+			placement.id,
+			placement.studentId,
+			placement.title,
+			placement.companyName,
+			placement.requiredHours,
+			placement.startDate,
+			placement.createdAt,
+			placement.updatedAt,
+		);
+}
+
+export async function updatePlacement(
+	placement: Pick<
+		WilPlacement,
+		'id' | 'title' | 'companyName' | 'requiredHours' | 'startDate' | 'updatedAt'
+	>,
+): Promise<void> {
+	getDatabase()
+		.prepare(
+			`UPDATE wil_placements
+			SET title = ?, company_name = ?, required_hours = ?, start_date = ?, updated_at = ?
+			WHERE id = ?`,
+		)
+		.run(
+			placement.title,
+			placement.companyName,
+			placement.requiredHours,
+			placement.startDate,
+			placement.updatedAt,
+			placement.id,
 		);
 }
 
 export async function getLogbookEntries(): Promise<LogbookEntry[]> {
 	return getDatabase()
-		.prepare(`SELECT ${entryColumns} FROM logbook_entries`)
+		.prepare(`SELECT ${entryColumns} FROM ${entryTables}`)
 		.all() as unknown as LogbookEntry[];
 }
 
@@ -63,17 +137,28 @@ export async function getEntriesForStudent(
 ): Promise<LogbookEntry[]> {
 	return getDatabase()
 		.prepare(
-			`SELECT ${entryColumns} FROM logbook_entries
-			WHERE student_id = ? ORDER BY work_date DESC, created_at DESC`,
+			`SELECT ${entryColumns} FROM ${entryTables}
+			WHERE p.student_id = ? ORDER BY e.work_date DESC, e.created_at DESC`,
 		)
 		.all(studentId) as unknown as LogbookEntry[];
+}
+
+export async function getEntriesForPlacement(
+	placementId: string,
+): Promise<LogbookEntry[]> {
+	return getDatabase()
+		.prepare(
+			`SELECT ${entryColumns} FROM ${entryTables}
+			WHERE e.placement_id = ? ORDER BY e.work_date DESC, e.created_at DESC`,
+		)
+		.all(placementId) as unknown as LogbookEntry[];
 }
 
 export async function getLogbookEntryById(
 	entryId: string,
 ): Promise<LogbookEntry | undefined> {
 	return getDatabase()
-		.prepare(`SELECT ${entryColumns} FROM logbook_entries WHERE id = ?`)
+		.prepare(`SELECT ${entryColumns} FROM ${entryTables} WHERE e.id = ?`)
 		.get(entryId) as unknown as LogbookEntry | undefined;
 }
 
@@ -82,7 +167,7 @@ export async function getLogbookEntryByEvidenceFileName(
 ): Promise<LogbookEntry | undefined> {
 	return getDatabase()
 		.prepare(
-			`SELECT ${entryColumns} FROM logbook_entries WHERE evidence_file_name = ?`,
+			`SELECT ${entryColumns} FROM ${entryTables} WHERE e.evidence_file_name = ?`,
 		)
 		.get(evidenceFileName) as unknown as LogbookEntry | undefined;
 }
@@ -90,13 +175,13 @@ export async function getLogbookEntryByEvidenceFileName(
 export async function createLogbookEntry(entry: LogbookEntry): Promise<void> {
 	getDatabase()
 		.prepare(
-			`INSERT INTO logbook_entries (id, student_id, work_date, description, hours,
+			`INSERT INTO logbook_entries (id, placement_id, work_date, description, hours,
 				evidence_file_name, status, mentor_email, created_at, updated_at, verified_at)
 			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		)
 		.run(
 			entry.id,
-			entry.studentId,
+			entry.placementId,
 			entry.workDate,
 			entry.description,
 			entry.hours,

@@ -1,6 +1,6 @@
 import Link from 'next/link';
-import { EntryStatusBadge } from '@/components/status-badge';
-import { getEntriesForStudent } from '@/lib/repository';
+import { HoursProgress } from '@/components/hours-progress';
+import { getEntriesForStudent, getPlacementsForStudent } from '@/lib/repository';
 import { sumVerifiedHours } from '@/lib/logbook-metrics';
 import { getCurrentUser } from '@/lib/session';
 
@@ -10,68 +10,66 @@ export default async function StudentDashboardPage() {
 		return null;
 	}
 
+	const placements = await getPlacementsForStudent(user.id);
 	const entries = await getEntriesForStudent(user.id);
-	const verifiedHours = sumVerifiedHours(entries);
 
 	return (
 		<div className='space-y-8'>
 			<section className='flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between'>
 				<div>
-					<h1 className='text-2xl font-semibold text-zinc-900'>My logbook</h1>
+					<h1 className='text-2xl font-semibold text-zinc-900'>
+						My WIL placements
+					</h1>
 					<p className='mt-1 text-sm text-zinc-600'>
-						{verifiedHours} of {user.requiredHours} verified hours completed
+						Open a placement to see its logbook and record new entries.
 					</p>
 				</div>
 				<Link
-					href='/student/entries/new'
+					href='/student/placements/new'
 					className='inline-flex rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800'
 				>
-					New entry
+					Add WIL placement
 				</Link>
 			</section>
 
-			<section className='overflow-x-auto rounded-lg border border-zinc-200 bg-white'>
-				<table className='min-w-full text-left text-sm'>
-					<thead className='border-b border-zinc-200 bg-zinc-50 text-zinc-600'>
-						<tr>
-							<th className='px-4 py-3 font-medium'>Date</th>
-							<th className='px-4 py-3 font-medium'>Hours</th>
-							<th className='px-4 py-3 font-medium'>Status</th>
-							<th className='px-4 py-3 font-medium'>Description</th>
-						</tr>
-					</thead>
-					<tbody>
-						{entries.length === 0 ? (
-							<tr>
-								<td className='px-4 py-6 text-zinc-500' colSpan={4}>
-									No entries yet. Create your first logbook entry.
-								</td>
-							</tr>
-						) : (
-							entries.map((entry) => (
-								<tr key={entry.id} className='border-b border-zinc-100'>
-									<td className='px-4 py-3'>
-										<Link
-											href={`/student/entries/${entry.id}`}
-											className='font-medium text-zinc-900 hover:underline'
-										>
-											{entry.workDate}
-										</Link>
-									</td>
-									<td className='px-4 py-3'>{entry.hours}</td>
-									<td className='px-4 py-3'>
-										<EntryStatusBadge status={entry.status} />
-									</td>
-									<td className='px-4 py-3 text-zinc-600'>
-										{entry.description}
-									</td>
-								</tr>
-							))
-						)}
-					</tbody>
-				</table>
-			</section>
+			{placements.length === 0 ? (
+				<section className='rounded-lg border border-zinc-200 bg-white p-6 text-sm text-zinc-600'>
+					You have no WIL placements yet. Add your placement and its required
+					hours to start your logbook.
+				</section>
+			) : (
+				<section className='grid gap-4 sm:grid-cols-2'>
+					{placements.map((placement) => {
+						const placementEntries = entries.filter(
+							(entry) => entry.placementId === placement.id,
+						);
+						return (
+							<Link
+								key={placement.id}
+								href={`/student/placements/${placement.id}`}
+								className='block space-y-3 rounded-lg border border-zinc-200 bg-white p-5 hover:border-zinc-400'
+							>
+								<div>
+									<p className='font-semibold text-zinc-900'>
+										{placement.title}
+									</p>
+									<p className='text-sm text-zinc-600'>
+										{placement.companyName} · started {placement.startDate}
+									</p>
+								</div>
+								<HoursProgress
+									verifiedHours={sumVerifiedHours(placementEntries)}
+									requiredHours={placement.requiredHours}
+								/>
+								<p className='text-xs text-zinc-500'>
+									{placementEntries.length}{' '}
+									{placementEntries.length === 1 ? 'entry' : 'entries'}
+								</p>
+							</Link>
+						);
+					})}
+				</section>
+			)}
 		</div>
 	);
 }
-

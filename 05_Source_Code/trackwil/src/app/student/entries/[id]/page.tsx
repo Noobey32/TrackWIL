@@ -40,7 +40,10 @@ export default async function LogbookEntryDetailPage({
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       <div>
-        <Link href="/student" className="text-sm text-zinc-600 hover:underline">
+        <Link
+          href={`/student/placements/${entry.placementId}`}
+          className="text-sm text-zinc-600 hover:underline"
+        >
           Back to logbook
         </Link>
         <div className="mt-2 flex items-center gap-3">

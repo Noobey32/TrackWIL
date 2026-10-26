@@ -1,7 +1,8 @@
 'use server';
 
 /**
- * Student logbook actions: create entries (optional evidence upload), then submit for mentor verification.
+ * Student logbook actions: create entries for one of the student's WIL placements (optional evidence upload),
+ * then submit for mentor verification.
  * Submitting issues a token and moves the entry to pending_verification.
  */
 
@@ -15,6 +16,7 @@ import {
 	createLogbookEntry,
 	getActiveVerificationTokenForEntry,
 	getLogbookEntryById,
+	getPlacementById,
 	submitEntryForVerification,
 } from '@/lib/repository';
 import { getCurrentUser } from '@/lib/session';
@@ -31,6 +33,12 @@ export async function createLogbookEntryAction(formData: FormData) {
 	const user = await getCurrentUser();
 	if (!user || user.role !== 'student') {
 		redirect('/');
+	}
+
+	const placementId = String(formData.get('placementId') ?? '');
+	const placement = await getPlacementById(placementId);
+	if (!placement || placement.studentId !== user.id) {
+		return { error: 'Choose one of your WIL placements for this entry.' };
 	}
 
 	const workDate = String(formData.get('workDate') ?? '').trim();
@@ -68,6 +76,7 @@ export async function createLogbookEntryAction(formData: FormData) {
 	const now = new Date().toISOString();
 	const newEntry: LogbookEntry = {
 		id: randomUUID(),
+		placementId: placement.id,
 		studentId: user.id,
 		workDate,
 		description,
@@ -83,6 +92,7 @@ export async function createLogbookEntryAction(formData: FormData) {
 	await createLogbookEntry(newEntry);
 
 	revalidatePath('/student');
+	revalidatePath(`/student/placements/${placement.id}`);
 	redirect(`/student/entries/${newEntry.id}`);
 }
 
@@ -130,6 +140,7 @@ export async function submitEntryForVerificationAction(entryId: string) {
 	await submitEntryForVerification(verificationToken, now.toISOString());
 
 	revalidatePath('/student');
+	revalidatePath(`/student/placements/${entry.placementId}`);
 	revalidatePath(`/student/entries/${entryId}`);
 	revalidatePath('/coordinator');
 

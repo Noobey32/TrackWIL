@@ -70,7 +70,6 @@ export async function signupAction(formData: FormData) {
     email: normalizedEmail,
     role: "student",
     passwordHash: hashPassword(password),
-    requiredHours: 200,
   };
 
   await createUser(newUser);
