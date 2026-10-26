@@ -1,4 +1,4 @@
-// TrackWIL system test suite: runs every automated test case (TC-110 to TC-150) against a running
+// TrackWIL system test suite: runs every automated test case (TC-110 to TC-151) against a running
 // server and the SQLite database, and prints one line per test with the actual result.
 // Usage: npm run build && npm start, then in another terminal: npm run test:system
 // The tests add entries to the database; run npm run db:reset afterwards to restore the demo data.
@@ -131,6 +131,9 @@ record("TC-148", "Entries can only be added to the student's own placement", r.t
 r = await get(`/student/placements/${sihlePlacement}`, newStudent);
 const r5 = await get(`/student/placements/${newPlacementId}`, newStudent);
 record("TC-149", "Student cannot open another student's placement", !r.text.includes("Table Bay Engineering") && r5.text.includes("Test Host Company"), `Sihle's placement shown: ${r.text.includes("Table Bay Engineering")}; own placement shown: ${r5.text.includes("Test Host Company")}`);
+const newEntryPage = await get(`/student/entries/new?placement=${newPlacementId}`, newStudent);
+const editPage = await get(`/student/placements/${newPlacementId}/edit`, newStudent);
+record("TC-151", "New entry and edit placement pages open with the student's placements", newEntryPage.status === 200 && newEntryPage.text.includes("Test Host Company") && editPage.status === 200 && editPage.text.includes("Save changes"), `new entry page ${newEntryPage.status} (placement listed: ${newEntryPage.text.includes("Test Host Company")}); edit page ${editPage.status} (form shown: ${editPage.text.includes("Save changes")})`);
 
 // ---------------------------------------------------------------- FR-04 / FR-05 entries and evidence
 r = await form("createLogbookEntryAction", { placementId: sihlePlacement, workDate: "2026-10-22", description: "Test entry: updated the asset register.", hours: "4.5", mentorEmail: "mentor@host.co.za" }, sihle);
@@ -278,9 +281,16 @@ const s2 = await login("student2@ctucareer.co.za", "student123");
 const pages = [["/", ""], ["/student", s2], [`/student/placements/${sihlePlacement}`, s2], ["/student/entries/new", s2], ["/coordinator", coord], [`/verify/c3d5e7f9a1b3c5d7e9f1a3b5c7d9e1f3a5b7c9d1e3f5a7b9`, ""]];
 const perf = [];
 let worst = 0;
+const failedPages = [];
 for (const [p, c] of pages) {
   const times = [];
-  for (let i = 0; i < 10; i++) { const t0 = performance.now(); await get(p, c); times.push(performance.now() - t0); }
+  for (let i = 0; i < 10; i++) {
+    const t0 = performance.now();
+    const res = await get(p, c);
+    times.push(performance.now() - t0);
+    const failure = `${p.startsWith("/verify/") ? "/verify/<token>" : p} -> ${res.status}`;
+    if (res.status !== 200 && !failedPages.includes(failure)) failedPages.push(failure);
+  }
   const avg = times.reduce((a, b) => a + b, 0) / times.length;
   const max = Math.max(...times);
   worst = Math.max(worst, max);
@@ -289,7 +299,7 @@ for (const [p, c] of pages) {
 const t0 = performance.now();
 const pf = await form("createLogbookEntryAction", { placementId: sihlePlacement, workDate: "2026-10-18", description: "Timing test entry.", hours: "1", mentorEmail: "m@host.co.za" }, s2);
 const createMs = performance.now() - t0;
-record("TC-144", "Pages and actions respond within 2 seconds (10 requests each)", worst < 2000 && createMs < 2000 && !!pf.redirect, perf.join("; ") + `; create entry ${createMs.toFixed(0)} ms`);
+record("TC-144", "Pages and actions respond within 2 seconds (10 requests each)", worst < 2000 && createMs < 2000 && !!pf.redirect && failedPages.length === 0, perf.join("; ") + `; create entry ${createMs.toFixed(0)} ms; pages with errors: ${failedPages.join(", ") || "none"}`);
 
 writeFileSync(resultsPath, JSON.stringify(results, null, 2));
 const failed = results.filter((x) => x.status !== "Pass").length;
