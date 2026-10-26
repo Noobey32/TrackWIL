@@ -59,3 +59,24 @@ export type StudentOverviewStatus =
 	| 'awaiting_verification'
 	| 'overdue';
 
+
+export type DocumentType =
+	| 'mou'
+	| 'commencement_letter'
+	| 'code_of_conduct'
+	| 'attendance_register';
+
+/** Uploaded WIL paperwork for one placement; the file is stored on disk under a random name. */
+export type PlacementDocument = {
+	id: string;
+	placementId: string;
+	/** Read through the document's placement; not stored on the document itself. */
+	studentId: string;
+	documentType: DocumentType;
+	/** Only attendance registers have a semester, e.g. "2026-S2". */
+	semester: string | null;
+	originalFileName: string;
+	storedFileName: string;
+	fileSize: number;
+	uploadedAt: string;
+};

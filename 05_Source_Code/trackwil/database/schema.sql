@@ -2,12 +2,17 @@
 -- Project: TrackWIL - Work-Integrated Learning logbook tracking
 -- Group: Group 3 (SPM622)
 --
--- Four tables in third normal form:
+-- Five tables in third normal form:
 --   users                 one row per account (student, coordinator, lecturer)
 --   wil_placements        one row per WIL placement; belongs to one student and
 --                         holds the hours that placement requires
 --   logbook_entries       one row per day of WIL work; belongs to one placement
 --   verification_tokens   one-time mentor links; each belongs to one entry
+--   placement_documents   uploaded WIL paperwork; each belongs to one placement.
+--                         The MOU, Commencement Letter and Code of Conduct are
+--                         kept once per placement, the Attendance Register once
+--                         per semester. The file itself is stored on disk under
+--                         data/uploads/documents/ with a random name.
 --
 -- A student can complete several WIL placements, so an entry is linked to its
 -- placement and reaches the student through it (no student_id on the entry).
@@ -72,3 +77,22 @@ CREATE TABLE IF NOT EXISTS verification_tokens (
 
 CREATE INDEX IF NOT EXISTS idx_verification_tokens_entry
     ON verification_tokens (entry_id);
+
+CREATE TABLE IF NOT EXISTS placement_documents (
+    id                  TEXT    PRIMARY KEY,
+    placement_id        TEXT    NOT NULL REFERENCES wil_placements (id) ON DELETE CASCADE,
+    document_type       TEXT    NOT NULL
+                                CHECK (document_type IN ('mou', 'commencement_letter',
+                                                         'code_of_conduct', 'attendance_register')),
+    -- Only attendance registers have a semester, written as e.g. 2026-S2.
+    semester            TEXT    CHECK (semester GLOB '[0-9][0-9][0-9][0-9]-S[12]'),
+    original_file_name  TEXT    NOT NULL,
+    stored_file_name    TEXT    NOT NULL UNIQUE,
+    file_size           INTEGER NOT NULL CHECK (file_size > 0 AND file_size <= 10485760),
+    uploaded_at         TEXT    NOT NULL,
+    CHECK ((document_type = 'attendance_register') = (semester IS NOT NULL))
+);
+
+-- One document of each type per placement, and one attendance register per semester.
+CREATE UNIQUE INDEX IF NOT EXISTS ux_placement_documents_slot
+    ON placement_documents (placement_id, document_type, IFNULL(semester, ''));

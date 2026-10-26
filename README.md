@@ -4,7 +4,7 @@ TrackWIL is the SPM622 Capstone Project of Group 3 (CTU Training Solutions, Cape
 
 ## About The Project
 
-* **Students** sign up with their CTU student email and add each of their WIL placements with the hours it requires. For each placement they record each day's work (date, description, hours), attach evidence and submit entries for verification. Each placement's logbook shows every entry's status and its verified hours against its required total.
+* **Students** sign up with their CTU student email and add each of their WIL placements with the hours it requires. For each placement they record each day's work (date, description, hours), attach evidence and submit entries for verification. Each placement's logbook shows every entry's status and its verified hours against its required total. Students also upload each placement's WIL documents: the MOU, Commencement Letter and Code of Conduct once, and an Attendance Register every semester.
 * **Workplace mentors** verify an entry from a secure one-time link, without needing an account. The link expires after 7 days and can be used only once.
 * **WIL coordinators and lecturers** see every student on one dashboard, labelled *On track*, *Awaiting verification* or *Overdue*, with verified hours and pending verifications.
 
@@ -37,13 +37,13 @@ Open http://localhost:3000. The SQLite database is created and filled with synth
 | Coordinator | coordinator@ctucareer.co.za | coord123    |
 | Lecturer    | lecturer@ctucareer.co.za    | lecturer123 |
 
-**Testing:** with the app running (`npm run build`, then `npm start`), `npm run test:system` runs the 43 automated system tests. See [05_Source_Code/trackwil/README.md](05_Source_Code/trackwil/README.md) for details.
+**Testing:** with the app running (`npm run build`, then `npm start`), `npm run test:system` runs the 52 automated system tests. See [05_Source_Code/trackwil/README.md](05_Source_Code/trackwil/README.md) for details.
 
 ## Technologies and Architecture
 
 * **Application:** Next.js 16 (App Router, Server Actions), React 19, TypeScript, Tailwind CSS 4
 * **Database:** SQLite through Node.js's built-in `node:sqlite` module, with primary and foreign keys, CHECK constraints and transactions
-* **Security:** salted scrypt password hashes, signed HttpOnly session cookies, server-side role checks, 48-character one-time verification tokens, restricted evidence uploads and downloads
+* **Security:** salted scrypt password hashes, signed HttpOnly session cookies, server-side role checks, 48-character one-time verification tokens, restricted evidence and document uploads (type, content and size checks) and downloads
 * **Architecture:** three layers (presentation, Server Actions, repository and database) in a single Next.js application
 * **Version control:** Git and GitHub, with name/task branches merged through pull requests
 

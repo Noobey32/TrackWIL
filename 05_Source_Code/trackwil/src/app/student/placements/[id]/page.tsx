@@ -1,8 +1,13 @@
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { HoursProgress } from '@/components/hours-progress';
+import { PlacementDocuments } from '@/components/placement-documents';
 import { EntryStatusBadge } from '@/components/status-badge';
-import { getEntriesForPlacement, getPlacementById } from '@/lib/repository';
+import {
+	getDocumentsForPlacement,
+	getEntriesForPlacement,
+	getPlacementById,
+} from '@/lib/repository';
 import { sumVerifiedHours } from '@/lib/logbook-metrics';
 import { getCurrentUser } from '@/lib/session';
 
@@ -23,6 +28,7 @@ export default async function PlacementLogbookPage({
 	}
 
 	const entries = await getEntriesForPlacement(placement.id);
+	const documents = await getDocumentsForPlacement(placement.id);
 
 	return (
 		<div className='space-y-8'>
@@ -61,46 +67,55 @@ export default async function PlacementLogbookPage({
 				/>
 			</section>
 
-			<section className='overflow-x-auto rounded-lg border border-zinc-200 bg-white'>
-				<table className='min-w-full text-left text-sm'>
-					<thead className='border-b border-zinc-200 bg-zinc-50 text-zinc-600'>
-						<tr>
-							<th className='px-4 py-3 font-medium'>Date</th>
-							<th className='px-4 py-3 font-medium'>Hours</th>
-							<th className='px-4 py-3 font-medium'>Status</th>
-							<th className='px-4 py-3 font-medium'>Description</th>
-						</tr>
-					</thead>
-					<tbody>
-						{entries.length === 0 ? (
+			<PlacementDocuments
+				placement={placement}
+				documents={documents}
+				canEdit
+			/>
+
+			<section className='space-y-3'>
+				<h2 className='text-lg font-semibold text-zinc-900'>Logbook entries</h2>
+				<div className='overflow-x-auto rounded-lg border border-zinc-200 bg-white'>
+					<table className='min-w-full text-left text-sm'>
+						<thead className='border-b border-zinc-200 bg-zinc-50 text-zinc-600'>
 							<tr>
-								<td className='px-4 py-6 text-zinc-500' colSpan={4}>
-									No entries yet. Create your first logbook entry.
-								</td>
+								<th className='px-4 py-3 font-medium'>Date</th>
+								<th className='px-4 py-3 font-medium'>Hours</th>
+								<th className='px-4 py-3 font-medium'>Status</th>
+								<th className='px-4 py-3 font-medium'>Description</th>
 							</tr>
-						) : (
-							entries.map((entry) => (
-								<tr key={entry.id} className='border-b border-zinc-100'>
-									<td className='px-4 py-3'>
-										<Link
-											href={`/student/entries/${entry.id}`}
-											className='font-medium text-zinc-900 hover:underline'
-										>
-											{entry.workDate}
-										</Link>
-									</td>
-									<td className='px-4 py-3'>{entry.hours}</td>
-									<td className='px-4 py-3'>
-										<EntryStatusBadge status={entry.status} />
-									</td>
-									<td className='px-4 py-3 text-zinc-600'>
-										{entry.description}
+						</thead>
+						<tbody>
+							{entries.length === 0 ? (
+								<tr>
+									<td className='px-4 py-6 text-zinc-500' colSpan={4}>
+										No entries yet. Create your first logbook entry.
 									</td>
 								</tr>
-							))
-						)}
-					</tbody>
-				</table>
+							) : (
+								entries.map((entry) => (
+									<tr key={entry.id} className='border-b border-zinc-100'>
+										<td className='px-4 py-3'>
+											<Link
+												href={`/student/entries/${entry.id}`}
+												className='font-medium text-zinc-900 hover:underline'
+											>
+												{entry.workDate}
+											</Link>
+										</td>
+										<td className='px-4 py-3'>{entry.hours}</td>
+										<td className='px-4 py-3'>
+											<EntryStatusBadge status={entry.status} />
+										</td>
+										<td className='px-4 py-3 text-zinc-600'>
+											{entry.description}
+										</td>
+									</tr>
+								))
+							)}
+						</tbody>
+					</table>
+				</div>
 			</section>
 		</div>
 	);

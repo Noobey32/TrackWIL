@@ -1,9 +1,9 @@
-// TrackWIL system test suite: runs every automated test case (TC-110 to TC-151) against a running
+// TrackWIL system test suite: runs every automated test case (TC-110 to TC-160) against a running
 // server and the SQLite database, and prints one line per test with the actual result.
 // Usage: npm run build && npm start, then in another terminal: npm run test:system
 // The tests add entries to the database; run npm run db:reset afterwards to restore the demo data.
 import { DatabaseSync } from "node:sqlite";
-import { readFileSync, writeFileSync } from "fs";
+import { existsSync, readFileSync, statSync, writeFileSync } from "fs";
 import path from "path";
 
 const base = process.argv[2] ?? "http://localhost:3000";
@@ -244,6 +244,85 @@ const perPlacement = ["placement-dylan-1", "placement-dylan-2"].map((id) => {
 });
 record("TC-150", "Verified hours are counted separately for each placement", perPlacement.every((x) => x.shown), perPlacement.map((x) => `${x.label} shown: ${x.shown}`).join("; "));
 
+// ---------------------------------------------------------------- FR-16 WIL documents
+const documentsDir = path.join(appDir, "data/uploads/documents");
+const docRows = (placementId, type) => db.prepare("SELECT * FROM placement_documents WHERE placement_id = ? AND document_type = ? ORDER BY semester").all(placementId, type);
+const fakePdf = (label, size = 0) => { const head = Buffer.from(`%PDF-1.4\n% ${label}\n`); return Buffer.concat([head, Buffer.alloc(Math.max(0, size - head.length) , 32), Buffer.from("\n%%EOF\n")]); };
+const pdfFile = (name, bytes) => ({ file: { blob: new Blob([bytes], { type: "application/pdf" }), name } });
+const upload = (cookie, placementId, documentType, file, semester) =>
+  form("uploadDocumentAction", { placementId, documentType, ...(semester ? { semester } : {}) }, cookie, file, `/student/placements/${placementId}`);
+
+r = await upload(newStudent, newPlacementId, "mou", pdfFile("Signed MOU.pdf", fakePdf("first MOU")));
+let mouRows = docRows(newPlacementId, "mou");
+const firstStored = mouRows[0]?.stored_file_name;
+record("TC-152", "Student uploads an MOU for their placement", r.text.includes('"success":true') && mouRows.length === 1 && /^[0-9a-f-]{36}\.pdf$/.test(firstStored ?? "") && existsSync(path.join(documentsDir, firstStored)) && mouRows[0].original_file_name === "Signed MOU.pdf", `stored as ${firstStored}; file on disk: ${firstStored ? existsSync(path.join(documentsDir, firstStored)) : false}; name shown to users "${mouRows[0]?.original_file_name}"`);
+
+r = await upload(newStudent, newPlacementId, "mou", pdfFile("Signed MOU v2.pdf", fakePdf("second MOU")));
+mouRows = docRows(newPlacementId, "mou");
+const secondStored = mouRows[0]?.stored_file_name;
+record("TC-153", "Uploading a document again replaces the previous file", mouRows.length === 1 && secondStored !== firstStored && !existsSync(path.join(documentsDir, firstStored)) && mouRows[0].original_file_name === "Signed MOU v2.pdf", `MOU rows: ${mouRows.length}; new file ${secondStored}; old file removed: ${!existsSync(path.join(documentsDir, firstStored))}`);
+
+// Dylan's WIL 1 started about 240 days ago, so it spans two semesters; one register is seeded.
+const nowDate = new Date();
+const currentSemester = `${nowDate.getUTCFullYear()}-S${nowDate.getUTCMonth() < 6 ? 1 : 2}`;
+const registersBefore = docRows("placement-dylan-1", "attendance_register").map((d) => d.semester);
+r = await upload(dylan, "placement-dylan-1", "attendance_register", pdfFile("Register.pdf", fakePdf("register")), currentSemester);
+await upload(dylan, "placement-dylan-1", "attendance_register", pdfFile("Register again.pdf", fakePdf("register again")), currentSemester);
+const registersAfter = docRows("placement-dylan-1", "attendance_register").map((d) => d.semester);
+const badSemesters = [];
+for (const semester of ["2026-S3", "2020-S1", "2099-S1", ""]) {
+  const b = await upload(dylan, "placement-dylan-1", "attendance_register", pdfFile("Register.pdf", fakePdf("bad")), semester);
+  badSemesters.push(`"${semester}" -> "${errorOf(b.text)}"`);
+}
+record("TC-154", "Attendance registers are kept once per semester", r.text.includes('"success":true') && registersAfter.length === registersBefore.length + 1 && new Set(registersAfter).size === registersAfter.length && badSemesters.every((x) => !x.includes("(no error)")), `registers before: ${registersBefore.join(", ")}; after uploading ${currentSemester} twice: ${registersAfter.join(", ")}; ${badSemesters.join("; ")}`);
+
+const badFiles = [];
+for (const [label, file, type] of [
+  [".exe file", { file: { blob: new Blob(["MZ"]), name: "setup.exe" } }, "code_of_conduct"],
+  ["program renamed to .pdf", { file: { blob: new Blob(["MZ not a pdf"]), name: "conduct.pdf" } }, "code_of_conduct"],
+  ["PNG renamed to .pdf", { file: { blob: new Blob([png]), name: "conduct.pdf" } }, "code_of_conduct"],
+  ["empty file", { file: { blob: new Blob([]), name: "conduct.pdf" } }, "code_of_conduct"],
+  ["10.5 MB PDF", pdfFile("big.pdf", fakePdf("big", 10.5 * 1024 * 1024)), "code_of_conduct"],
+  ["unknown document type", pdfFile("id.pdf", fakePdf("id")), "id_copy"],
+]) {
+  const b = await upload(newStudent, newPlacementId, type, file);
+  badFiles.push(`${label} -> "${errorOf(b.text)}"`);
+}
+const conductRows = docRows(newPlacementId, "code_of_conduct").length;
+record("TC-155", "Invalid or oversized documents are rejected", badFiles.every((x) => !x.includes("(no error)")) && conductRows === 0, badFiles.join("; ") + `; code of conduct rows saved: ${conductRows}`);
+
+r = await upload(newStudent, sihlePlacement, "commencement_letter", pdfFile("letter.pdf", fakePdf("letter")));
+const coordUpload = await upload(coord, sihlePlacement, "commencement_letter", pdfFile("letter.pdf", fakePdf("letter")));
+const sihleLetters = docRows(sihlePlacement, "commencement_letter").length;
+record("TC-156", "Documents can only be uploaded to the student's own placement", r.text.includes("Placement not found") && sihleLetters === 0 && !coordUpload.text.includes('"success":true'), `other student's placement -> "${errorOf(r.text)}"; coordinator upload accepted: ${coordUpload.text.includes('"success":true')}; letters on Sihle's placement: ${sihleLetters}`);
+
+const mouId = mouRows[0].id;
+const ownerRes = await fetch(`${base}/api/documents/${mouId}`, { headers: { Cookie: newStudent } });
+const ownerBody = Buffer.from(await ownerRes.arrayBuffer()).subarray(0, 5).toString();
+const docOther = await get(`/api/documents/${mouId}`, sihle);
+const docAnon = await get(`/api/documents/${mouId}`);
+const docCoord = await get(`/api/documents/${mouId}`, coord);
+const docLect = await get(`/api/documents/${mouId}`, lect);
+const docUnknown = await get("/api/documents/no-such-document", newStudent);
+record("TC-157", "Document download is limited to the owner and staff", ownerRes.status === 200 && ownerRes.headers.get("content-type") === "application/pdf" && ownerBody === "%PDF-" && docOther.status === 403 && docAnon.status === 401 && docCoord.status === 200 && docLect.status === 200 && docUnknown.status === 404, `owner ${ownerRes.status} (${ownerRes.headers.get("content-type")}); other student ${docOther.status}; signed out ${docAnon.status}; coordinator ${docCoord.status}; lecturer ${docLect.status}; unknown id ${docUnknown.status}`);
+
+const otherDelete = await args("deleteDocumentAction", [mouId], sihle);
+const stillThere = docRows(newPlacementId, "mou").length === 1;
+const ownDelete = await args("deleteDocumentAction", [mouId], newStudent);
+const removed = docRows(newPlacementId, "mou").length === 0 && !existsSync(path.join(documentsDir, secondStored));
+record("TC-158", "Students can remove their own documents only", otherDelete.text.includes("Document not found") && stillThere && ownDelete.text.includes('"success":true') && removed, `other student -> "${errorOf(otherDelete.text)}" (document kept: ${stillThere}); owner -> row and file removed: ${removed}`);
+
+const dylanWil2 = await get("/student/placements/placement-dylan-2", dylan);
+const sihleDocs = await get(`/student/placements/${sihlePlacement}`, sihle);
+const overviewAgain = await get("/student", dylan);
+const pageShows = (page, text) => page.text.includes(text);
+record("TC-159", "Placement pages show each document as Uploaded or Missing", dylanWil2.status === 200 && pageShows(dylanWil2, "Memorandum of Understanding (MOU)") && pageShows(dylanWil2, "Attendance registers") && !pageShows(dylanWil2, "Missing") && pageShows(sihleDocs, "Missing") && pageShows(sihleDocs, "Uploaded") && (overviewAgain.text.includes("documents <!-- -->3<!-- --> of<!-- --> <!-- -->3") || overviewAgain.text.includes("documents 3 of 3")), `Dylan WIL 2 complete (no Missing): ${!pageShows(dylanWil2, "Missing")}; Sihle shows Uploaded and Missing: ${pageShows(sihleDocs, "Uploaded") && pageShows(sihleDocs, "Missing")}; placement card shows documents 3 of 3: ${overviewAgain.text.includes("documents <!-- -->3<!-- --> of<!-- --> <!-- -->3") || overviewAgain.text.includes("documents 3 of 3")}`);
+
+const bigPdf = fakePdf("large scan", 9.5 * 1024 * 1024);
+r = await upload(newStudent, newPlacementId, "code_of_conduct", pdfFile("Scanned code of conduct.pdf", bigPdf));
+const bigRow = docRows(newPlacementId, "code_of_conduct")[0];
+record("TC-160", "A 9.5 MB scanned document uploads through the student page", r.text.includes('"success":true') && bigRow?.file_size === bigPdf.length && statSync(path.join(documentsDir, bigRow.stored_file_name)).size === bigPdf.length, `response: ${r.text.includes('"success":true') ? "success" : errorOf(r.text) + " (status " + r.status + ")"}; stored size ${bigRow?.file_size ?? "none"} of ${bigPdf.length} bytes`);
+
 // ---------------------------------------------------------------- FR-12 timestamps
 const t = db.prepare("SELECT created_at, updated_at, verified_at FROM logbook_entries WHERE id=?").get(draftId);
 const tk = db.prepare("SELECT used_at, decision FROM verification_tokens WHERE token=?").get(token);
@@ -271,6 +350,9 @@ const attempts = [
   ["placement for missing student", "INSERT INTO wil_placements VALUES ('p3','nobody','WIL 1','Host',200,'2026-10-01','t','t')"],
   ["unknown role", "INSERT INTO users VALUES ('u2','B','b@x.co','admin','h')"],
   ["duplicate email (case)", "INSERT INTO users VALUES ('u3','C','A@X.CO','student','h')"],
+  ["document with an unknown type", "INSERT INTO placement_documents VALUES ('d1','p1','id_copy',NULL,'a.pdf','s1.pdf',10,'t')"],
+  ["attendance register without a semester", "INSERT INTO placement_documents VALUES ('d2','p1','attendance_register',NULL,'a.pdf','s2.pdf',10,'t')"],
+  ["second MOU for one placement", "INSERT INTO placement_documents VALUES ('d3','p1','mou',NULL,'a.pdf','s3.pdf',10,'t'); INSERT INTO placement_documents VALUES ('d4','p1','mou',NULL,'b.pdf','s4.pdf',10,'t')"],
   ["token used without decision", "INSERT INTO logbook_entries VALUES ('e4','p1','2026-10-01','d',5,NULL,'draft',NULL,'t','t',NULL); INSERT INTO verification_tokens VALUES ('k','e4','t','used',NULL)"],
 ];
 const out = attempts.map(([label, sql]) => { try { w.exec(sql); return `${label}: ACCEPTED`; } catch (e) { return `${label}: rejected (${e.message.split(":")[0]})`; } });

@@ -11,6 +11,7 @@ import { mkdir, writeFile } from 'fs/promises';
 import path from 'path';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
+import { maxDocumentBytes } from '@/lib/documents';
 import { uploadsDirectory } from '@/lib/paths';
 import {
 	createLogbookEntry,
@@ -66,6 +67,9 @@ export async function createLogbookEntryAction(formData: FormData) {
 		const extension = extensionForFileName(evidenceFile.name);
 		if (!allowedEvidenceExtensions.includes(extension)) {
 			return { error: 'Evidence must be a PDF or image file.' };
+		}
+		if (evidenceFile.size > maxDocumentBytes) {
+			return { error: 'Evidence files cannot be larger than 10 MB.' };
 		}
 		evidenceFileName = `${randomUUID()}${extension}`;
 		await mkdir(uploadsDirectory, { recursive: true });

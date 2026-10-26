@@ -1,11 +1,13 @@
 /**
- * Data access for users, WIL placements, logbook entries, and mentor verification tokens.
+ * Data access for users, WIL placements, logbook entries, mentor verification tokens,
+ * and placement documents.
  * Backed by SQLite (see database/schema.sql); columns are aliased to the
  * camelCase shapes in types.ts so callers never deal with SQL rows directly.
  */
 import { getDatabase, inTransaction } from '@/lib/db';
 import type {
 	LogbookEntry,
+	PlacementDocument,
 	User,
 	VerificationToken,
 	WilPlacement,
@@ -33,6 +35,15 @@ const entryColumns = `e.id, e.placement_id AS placementId, p.student_id AS stude
 
 const entryTables = `logbook_entries e
 	JOIN wil_placements p ON p.id = e.placement_id`;
+
+// Documents do not store the student either; it is read from the document's placement.
+const documentColumns = `d.id, d.placement_id AS placementId, p.student_id AS studentId,
+	d.document_type AS documentType, d.semester,
+	d.original_file_name AS originalFileName, d.stored_file_name AS storedFileName,
+	d.file_size AS fileSize, d.uploaded_at AS uploadedAt`;
+
+const documentTables = `placement_documents d
+	JOIN wil_placements p ON p.id = d.placement_id`;
 
 const tokenColumns = `token, entry_id AS entryId, expires_at AS expiresAt,
 	used_at AS usedAt, decision`;
@@ -291,4 +302,99 @@ export async function recordMentorDecision(
 			);
 		return true;
 	});
+}
+
+export async function getDocumentsForPlacement(
+	placementId: string,
+): Promise<PlacementDocument[]> {
+	return getDatabase()
+		.prepare(
+			`SELECT ${documentColumns} FROM ${documentTables}
+			WHERE d.placement_id = ? ORDER BY d.semester DESC`,
+		)
+		.all(placementId)
+		.map((row) => toPlainObject(row)) as PlacementDocument[];
+}
+
+export async function getDocumentsForStudent(
+	studentId: string,
+): Promise<PlacementDocument[]> {
+	return getDatabase()
+		.prepare(
+			`SELECT ${documentColumns} FROM ${documentTables}
+			WHERE p.student_id = ? ORDER BY d.semester DESC`,
+		)
+		.all(studentId)
+		.map((row) => toPlainObject(row)) as PlacementDocument[];
+}
+
+export async function getDocumentById(
+	documentId: string,
+): Promise<PlacementDocument | undefined> {
+	return toPlainObject(
+		getDatabase()
+			.prepare(`SELECT ${documentColumns} FROM ${documentTables} WHERE d.id = ?`)
+			.get(documentId),
+	) as PlacementDocument | undefined;
+}
+
+/**
+ * Store a document in its slot (one per type, or one per semester for attendance registers).
+ * An existing document in that slot is replaced; its stored file name is returned so the
+ * caller can delete the old file.
+ */
+export async function saveDocument(
+	document: Omit<PlacementDocument, 'studentId'>,
+): Promise<string | null> {
+	return inTransaction((database) => {
+		const existing = database
+			.prepare(
+				`SELECT id, stored_file_name AS storedFileName FROM placement_documents
+				WHERE placement_id = ? AND document_type = ? AND semester IS ?`,
+			)
+			.get(document.placementId, document.documentType, document.semester) as
+			| { id: string; storedFileName: string }
+			| undefined;
+
+		if (existing) {
+			database
+				.prepare(
+					`UPDATE placement_documents
+					SET original_file_name = ?, stored_file_name = ?, file_size = ?, uploaded_at = ?
+					WHERE id = ?`,
+				)
+				.run(
+					document.originalFileName,
+					document.storedFileName,
+					document.fileSize,
+					document.uploadedAt,
+					existing.id,
+				);
+			return existing.storedFileName;
+		}
+
+		database
+			.prepare(
+				`INSERT INTO placement_documents (id, placement_id, document_type, semester,
+					original_file_name, stored_file_name, file_size, uploaded_at)
+				VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+			)
+			.run(
+				document.id,
+				document.placementId,
+				document.documentType,
+				document.semester,
+				document.originalFileName,
+				document.storedFileName,
+				document.fileSize,
+				document.uploadedAt,
+			);
+		return null;
+	});
+}
+
+export async function deleteDocument(documentId: string): Promise<void> {
+	getDatabase()
+		.prepare('DELETE FROM placement_documents WHERE id = ?')
+		.run(documentId);
 }

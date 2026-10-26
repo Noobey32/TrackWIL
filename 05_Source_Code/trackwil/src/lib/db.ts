@@ -1,12 +1,15 @@
 /**
  * SQLite connection using Node's built-in `node:sqlite` (Node 22.13+; no native package to install).
- * On first use the schema is applied, and an empty database is filled with the synthetic seed data.
+ * On first use the schema is applied, and an empty database is filled with the synthetic seed data
+ * (including the demo document files the seed data refers to).
  */
-import { mkdirSync, readFileSync } from "fs";
+import { cpSync, mkdirSync, readFileSync } from "fs";
 import { DatabaseSync } from "node:sqlite";
 import {
   dataDirectory,
   databaseFilePath,
+  demoDocumentsDirectory,
+  documentsDirectory,
   schemaFilePath,
   seedFilePath,
 } from "@/lib/paths";
@@ -35,6 +38,10 @@ function openDatabase(): DatabaseSync {
     .get() as { userCount: number };
   if (userCount === 0) {
     database.exec(readFileSync(seedFilePath, "utf8"));
+    cpSync(demoDocumentsDirectory, documentsDirectory, {
+      recursive: true,
+      filter: (source) => !source.endsWith(".gitattributes"),
+    });
   }
 
   return database;
