@@ -1,18 +1,15 @@
 import Link from 'next/link';
-import { notFound, redirect } from 'next/navigation';
+import { notFound } from 'next/navigation';
 import { PlacementForm } from '@/components/placement-form';
 import { getPlacementById } from '@/lib/repository';
-import { getCurrentUser } from '@/lib/session';
+import { requireRole } from '@/lib/session';
 
 export default async function EditPlacementPage({
 	params,
 }: {
 	params: Promise<{ id: string }>;
 }) {
-	const user = await getCurrentUser();
-	if (!user) {
-		redirect('/');
-	}
+	const user = await requireRole('student');
 
 	const { id } = await params;
 	const placement = await getPlacementById(id);

@@ -304,6 +304,13 @@ export async function recordMentorDecision(
 	});
 }
 
+export async function getDocuments(): Promise<PlacementDocument[]> {
+	return getDatabase()
+		.prepare(`SELECT ${documentColumns} FROM ${documentTables}`)
+		.all()
+		.map((row) => toPlainObject(row)) as PlacementDocument[];
+}
+
 export async function getDocumentsForPlacement(
 	placementId: string,
 ): Promise<PlacementDocument[]> {

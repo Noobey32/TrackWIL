@@ -7,13 +7,10 @@ import {
 	getPlacementsForStudent,
 } from '@/lib/repository';
 import { sumVerifiedHours } from '@/lib/logbook-metrics';
-import { getCurrentUser } from '@/lib/session';
+import { requireRole } from '@/lib/session';
 
 export default async function StudentDashboardPage() {
-	const user = await getCurrentUser();
-	if (!user) {
-		return null;
-	}
+	const user = await requireRole('student');
 
 	const placements = await getPlacementsForStudent(user.id);
 	const entries = await getEntriesForStudent(user.id);

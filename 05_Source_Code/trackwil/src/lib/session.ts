@@ -7,6 +7,7 @@ import { createHmac, randomBytes, timingSafeEqual } from "crypto";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import path from "path";
 import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 import { dataDirectory } from "@/lib/paths";
 import { getUserById } from "@/lib/repository";
 import type { User } from "@/lib/types";
@@ -79,6 +80,23 @@ export async function setSessionUser(userId: string): Promise<void> {
 export async function clearSession(): Promise<void> {
   const cookieStore = await cookies();
   cookieStore.delete(sessionCookieName);
+}
+
+/**
+ * Role check for protected pages and layouts. Next.js renders a layout and its page at the
+ * same time, so a redirect in the layout alone does not stop the page from rendering and
+ * sending its data in the redirect response. Every protected page therefore calls this
+ * itself, before loading any data.
+ */
+export async function requireRole(...roles: User["role"][]): Promise<User> {
+  const user = await getCurrentUser();
+  if (!user) {
+    redirect("/");
+  }
+  if (!roles.includes(user.role)) {
+    redirect(dashboardPathForRole(user.role));
+  }
+  return user;
 }
 
 export function dashboardPathForRole(role: User["role"]): string {

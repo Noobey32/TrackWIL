@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import { CopyVerificationLink } from "@/components/copy-verification-link";
 import { SubmitForVerification } from "@/components/submit-for-verification";
 import { EntryStatusBadge } from "@/components/status-badge";
@@ -8,17 +8,14 @@ import {
   getLogbookEntryById,
 } from "@/lib/repository";
 import { getAppOrigin } from "@/lib/request-url";
-import { getCurrentUser } from "@/lib/session";
+import { requireRole } from "@/lib/session";
 
 export default async function LogbookEntryDetailPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const user = await getCurrentUser();
-  if (!user) {
-    redirect("/");
-  }
+  const user = await requireRole("student");
 
   const { id } = await params;
   const entry = await getLogbookEntryById(id);

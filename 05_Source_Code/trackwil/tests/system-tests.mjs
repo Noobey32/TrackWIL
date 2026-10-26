@@ -1,4 +1,4 @@
-// TrackWIL system test suite: runs every automated test case (TC-110 to TC-160) against a running
+// TrackWIL system test suite: runs every automated test case (TC-110 to TC-166) against a running
 // server and the SQLite database, and prints one line per test with the actual result.
 // Usage: npm run build && npm start, then in another terminal: npm run test:system
 // The tests add entries to the database; run npm run db:reset afterwards to restore the demo data.
@@ -48,8 +48,9 @@ const session = (setCookie) => {
   return m ? `trackwil_session=${m[1]}` : "";
 };
 const errorOf = (text) => (text.match(/"error":"([^"]*)"/) ?? [])[1] ?? "(no error)";
-// A protected page counts as blocked if it redirects or renders without the protected content.
-const blocked = (r, marker) => (r.status >= 300 && r.status < 400) || !r.text.includes(marker) || r.text.includes("NEXT_REDIRECT");
+// A protected page counts as blocked only if its content is absent from the response. A redirect
+// alone is not enough: the body of a redirect response can still carry the page's data (DEF-07).
+const blocked = (r, marker) => !r.text.includes(marker);
 const entryRow = (id) => db.prepare("SELECT * FROM logbook_entries WHERE id = ?").get(id);
 async function login(email, password) { return session((await form("loginAction", { email, password })).setCookie); }
 const sihlePlacement = "placement-sihle-1";
@@ -90,15 +91,15 @@ r = await get("/student");
 const rc = await get("/coordinator");
 record("TC-117", "Signed-out visitor is redirected from /student and /coordinator", r.status === 307 && rc.status === 307, `/student -> ${r.status} ${r.location}; /coordinator -> ${rc.status} ${rc.location}`);
 r = await get("/student", coord);
-record("TC-118", "Coordinator cannot open the student area", blocked(r, "My WIL placements"), `status ${r.status}; redirected to /coordinator: ${r.text.includes("NEXT_REDIRECT;replace;/coordinator") || r.location.includes("/coordinator")}`);
+record("TC-118", "Coordinator cannot open the student area", blocked(r, "My WIL placements"), `status ${r.status}; redirected to /coordinator: ${r.text.includes("NEXT_REDIRECT;replace;/coordinator") || r.location.includes("/coordinator")}; student page content in response: ${r.text.includes("My WIL placements")}`);
 r = await get("/coordinator", sihle);
-record("TC-119", "Student cannot open the coordinator dashboard", blocked(r, "Coordinator dashboard"), `status ${r.status}; redirected to /student: ${r.text.includes("NEXT_REDIRECT;replace;/student") || r.location.includes("/student")}`);
+record("TC-119", "Student cannot open the coordinator dashboard", blocked(r, "Coordinator dashboard"), `status ${r.status}; redirected to /student: ${r.text.includes("NEXT_REDIRECT;replace;/student") || r.location.includes("/student")}; dashboard content in response: ${r.text.includes("Coordinator dashboard")}`);
 r = await get("/student/entries/entry-1", sihle);
 record("TC-120", "Student cannot view another student's entry", !r.text.includes("Assisted with customer intake"), `status ${r.status}; entry text shown: ${r.text.includes("Assisted with customer intake")}`);
 const forged = await get("/coordinator", "trackwil_session=coordinator-1");
 const sig = sihle.split(".").pop();
 const tampered = await get("/coordinator", `trackwil_session=coordinator-1.${sig}`);
-record("TC-121", "Forged or tampered session cookie is rejected (DEF-01 retest)", blocked(forged, "Coordinator dashboard") && blocked(tampered, "Coordinator dashboard"), `unsigned 'coordinator-1' -> dashboard shown: ${forged.text.includes("Coordinator dashboard") && !forged.text.includes("NEXT_REDIRECT")}; another user's signature -> dashboard shown: ${tampered.text.includes("Coordinator dashboard") && !tampered.text.includes("NEXT_REDIRECT")}`);
+record("TC-121", "Forged or tampered session cookie is rejected (DEF-01 retest)", blocked(forged, "Coordinator dashboard") && blocked(tampered, "Coordinator dashboard"), `unsigned 'coordinator-1' -> status ${forged.status}, dashboard content in response: ${forged.text.includes("Coordinator dashboard")}; another user's signature -> status ${tampered.status}, dashboard content in response: ${tampered.text.includes("Coordinator dashboard")}`);
 
 // ---------------------------------------------------------------- FR-15 WIL placements
 const placementRow = (id) => db.prepare("SELECT * FROM wil_placements WHERE id = ?").get(id);
@@ -232,7 +233,32 @@ r = await get("/coordinator", lect);
 // Each student's row runs from their name to the closing </tr> of that row.
 const rowFor = (name) => { const i = r.text.indexOf(name); return r.text.slice(i, r.text.indexOf("</tr>", i)); };
 const statusOf = (name) => ["On track", "Awaiting verification", "Overdue"].find((s) => rowFor(name).includes(s));
+const dashboardText = r.text;
 record("TC-139", "Dashboard shows each student's status, hours and pending count", statusOf("Dylan Shepard") === "On track" && statusOf("Moe Green") === "Overdue" && statusOf("Sihle Kayise") === "Awaiting verification", `Dylan=${statusOf("Dylan Shepard")}; Moe=${statusOf("Moe Green")}; Sihle=${statusOf("Sihle Kayise")}; Gedion=${statusOf("Gedion Basson")}`);
+
+// ---------------------------------------------------------------- FR-17 student profile for staff
+const profile = await get("/coordinator/students/student-1", coord);
+const profileHas = (text) => profile.text.includes(text);
+const readOnly = !profileHas("name=\"file\"") && !profileHas(">Replace<") && !profileHas(">Remove<");
+record("TC-161", "Coordinator opens a student's profile with placements, logbook and documents", profile.status === 200 && profileHas("Dylan Shepard") && profileHas("Cape Legal Services") && profileHas("Harbour Admin Solutions") && profileHas("Assisted with customer intake forms") && profileHas("/api/documents/document-1") && profileHas("Memorandum of Understanding (MOU)") && readOnly, `status ${profile.status}; both placements: ${profileHas("Cape Legal Services") && profileHas("Harbour Admin Solutions")}; logbook entry shown: ${profileHas("Assisted with customer intake forms")}; document link shown: ${profileHas("/api/documents/document-1")}; read-only (no upload/replace/remove): ${readOnly}`);
+const lectProfile = await get("/coordinator/students/student-2", lect);
+record("TC-162", "Lecturer can open a student's profile", lectProfile.status === 200 && lectProfile.text.includes("Sihle Kayise") && lectProfile.text.includes("Table Bay Engineering"), `status ${lectProfile.status}; shows Sihle and her placement: ${lectProfile.text.includes("Sihle Kayise") && lectProfile.text.includes("Table Bay Engineering")}`);
+const studentTry = await get("/coordinator/students/student-1", sihle);
+record("TC-163", "Students cannot open the staff student profile", blocked(studentTry, "Back to dashboard") && !studentTry.text.includes("Harbour Admin Solutions"), `status ${studentTry.status}; Dylan's placement in the response to Sihle: ${studentTry.text.includes("Harbour Admin Solutions")}`);
+const notStudent = await get("/coordinator/students/coordinator-1", coord);
+const unknownStudent = await get("/coordinator/students/no-such-student", coord);
+record("TC-164", "Profile of an unknown user or a staff account is not found", notStudent.status === 404 && unknownStudent.status === 404, `coordinator account -> ${notStudent.status}; unknown id -> ${unknownStudent.status}`);
+const leakChecks = [
+  ["student -> /coordinator", await get("/coordinator", sihle), ["student1@ctucareer.co.za", "20240053@ctucareer.co.za"]],
+  ["made-up cookie -> /coordinator", await get("/coordinator", "trackwil_session=anything"), ["student1@ctucareer.co.za", "20240053@ctucareer.co.za"]],
+  ["student -> another student's profile", await get("/coordinator/students/student-1", sihle), ["Harbour Admin Solutions", "Assisted with customer intake"]],
+  ["made-up cookie -> student profile", await get("/coordinator/students/student-2", "trackwil_session=anything"), ["Table Bay Engineering"]],
+  ["coordinator -> a student's placement page", await get(`/student/placements/${sihlePlacement}`, coord), ["Table Bay Engineering"]],
+].map(([label, res, secrets]) => ({ label, status: res.status, leaked: secrets.filter((x) => res.text.includes(x)) }));
+record("TC-166", "Blocked pages send none of their data in the redirect response (DEF-07 retest)", leakChecks.every((c) => c.leaked.length === 0 && c.status >= 300 && c.status < 400), leakChecks.map((c) => `${c.label}: ${c.status}, leaked ${c.leaked.length ? c.leaked.join(", ") : "nothing"}`).join("; "));
+const dashRow = (name) => { const i = dashboardText.indexOf(name); return dashboardText.slice(i, dashboardText.indexOf("</tr>", i)); };
+const linked = ["student-1", "student-2"].every((id) => dashboardText.includes(`href="/coordinator/students/${id}"`));
+record("TC-165", "Dashboard links to each student and shows missing documents", linked && dashRow("Moe Green").includes("missing") && dashRow("Sihle Kayise").includes("missing") && dashboardText.includes("Documents"), `profile links: ${linked}; Moe row shows missing: ${dashRow("Moe Green").includes("missing")}; Sihle row shows missing: ${dashRow("Sihle Kayise").includes("missing")}`);
 
 const dylan = await login("student1@ctucareer.co.za", "student123");
 const overview = await get("/student", dylan);
@@ -360,7 +386,7 @@ record("TC-143", "Database constraints reject invalid data", out.every((o) => o.
 
 // ---------------------------------------------------------------- NFR-02 performance
 const s2 = await login("student2@ctucareer.co.za", "student123");
-const pages = [["/", ""], ["/student", s2], [`/student/placements/${sihlePlacement}`, s2], ["/student/entries/new", s2], ["/coordinator", coord], [`/verify/c3d5e7f9a1b3c5d7e9f1a3b5c7d9e1f3a5b7c9d1e3f5a7b9`, ""]];
+const pages = [["/", ""], ["/student", s2], [`/student/placements/${sihlePlacement}`, s2], ["/student/entries/new", s2], ["/coordinator", coord], ["/coordinator/students/student-1", coord], [`/verify/c3d5e7f9a1b3c5d7e9f1a3b5c7d9e1f3a5b7c9d1e3f5a7b9`, ""]];
 const perf = [];
 let worst = 0;
 const failedPages = [];

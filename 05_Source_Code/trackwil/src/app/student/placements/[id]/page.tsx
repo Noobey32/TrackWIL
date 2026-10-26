@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { notFound, redirect } from 'next/navigation';
+import { notFound } from 'next/navigation';
 import { HoursProgress } from '@/components/hours-progress';
 import { PlacementDocuments } from '@/components/placement-documents';
 import { EntryStatusBadge } from '@/components/status-badge';
@@ -9,17 +9,14 @@ import {
 	getPlacementById,
 } from '@/lib/repository';
 import { sumVerifiedHours } from '@/lib/logbook-metrics';
-import { getCurrentUser } from '@/lib/session';
+import { requireRole } from '@/lib/session';
 
 export default async function PlacementLogbookPage({
 	params,
 }: {
 	params: Promise<{ id: string }>;
 }) {
-	const user = await getCurrentUser();
-	if (!user) {
-		redirect('/');
-	}
+	const user = await requireRole('student');
 
 	const { id } = await params;
 	const placement = await getPlacementById(id);
