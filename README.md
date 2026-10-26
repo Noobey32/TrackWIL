@@ -37,7 +37,7 @@ Open http://localhost:3000. The SQLite database is created and filled with synth
 | Coordinator | coordinator@ctucareer.co.za | coord123    |
 | Lecturer    | lecturer@ctucareer.co.za    | lecturer123 |
 
-**Testing:** with the app running (`npm run build`, then `npm start`), `npm run test:system` runs the 42 automated system tests. See [05_Source_Code/trackwil/README.md](05_Source_Code/trackwil/README.md) for details.
+**Testing:** with the app running (`npm run build`, then `npm start`), `npm run test:system` runs the 43 automated system tests. See [05_Source_Code/trackwil/README.md](05_Source_Code/trackwil/README.md) for details.
 
 ## Technologies and Architecture
 

@@ -11,6 +11,12 @@ import type {
 	WilPlacement,
 } from '@/lib/types';
 
+// node:sqlite returns rows with a null prototype, which React refuses to pass from a
+// Server Component to a Client Component, so every row is copied into a plain object.
+function toPlainObject(row: unknown): object | undefined {
+	return row ? { ...(row as object) } : undefined;
+}
+
 const userColumns = `id, full_name AS fullName, email, role,
 	password_hash AS passwordHash`;
 
@@ -34,20 +40,24 @@ const tokenColumns = `token, entry_id AS entryId, expires_at AS expiresAt,
 export async function getUsers(): Promise<User[]> {
 	return getDatabase()
 		.prepare(`SELECT ${userColumns} FROM users ORDER BY full_name`)
-		.all() as unknown as User[];
+		.all().map((row) => toPlainObject(row)) as User[];
 }
 
 export async function getUserByEmail(email: string): Promise<User | undefined> {
 	// The email column is COLLATE NOCASE, so this match ignores letter case.
-	return getDatabase()
-		.prepare(`SELECT ${userColumns} FROM users WHERE email = ?`)
-		.get(email) as unknown as User | undefined;
+	return toPlainObject(
+		getDatabase()
+			.prepare(`SELECT ${userColumns} FROM users WHERE email = ?`)
+			.get(email),
+	) as User | undefined;
 }
 
 export async function getUserById(userId: string): Promise<User | undefined> {
-	return getDatabase()
-		.prepare(`SELECT ${userColumns} FROM users WHERE id = ?`)
-		.get(userId) as unknown as User | undefined;
+	return toPlainObject(
+		getDatabase()
+			.prepare(`SELECT ${userColumns} FROM users WHERE id = ?`)
+			.get(userId),
+	) as User | undefined;
 }
 
 export async function createUser(user: User): Promise<void> {
@@ -62,7 +72,7 @@ export async function createUser(user: User): Promise<void> {
 export async function getPlacements(): Promise<WilPlacement[]> {
 	return getDatabase()
 		.prepare(`SELECT ${placementColumns} FROM wil_placements`)
-		.all() as unknown as WilPlacement[];
+		.all().map((row) => toPlainObject(row)) as WilPlacement[];
 }
 
 /** A student's placements, the most recently started first. */
@@ -74,15 +84,17 @@ export async function getPlacementsForStudent(
 			`SELECT ${placementColumns} FROM wil_placements
 			WHERE student_id = ? ORDER BY start_date DESC, created_at DESC`,
 		)
-		.all(studentId) as unknown as WilPlacement[];
+		.all(studentId).map((row) => toPlainObject(row)) as WilPlacement[];
 }
 
 export async function getPlacementById(
 	placementId: string,
 ): Promise<WilPlacement | undefined> {
-	return getDatabase()
-		.prepare(`SELECT ${placementColumns} FROM wil_placements WHERE id = ?`)
-		.get(placementId) as unknown as WilPlacement | undefined;
+	return toPlainObject(
+		getDatabase()
+			.prepare(`SELECT ${placementColumns} FROM wil_placements WHERE id = ?`)
+			.get(placementId),
+	) as WilPlacement | undefined;
 }
 
 export async function createPlacement(placement: WilPlacement): Promise<void> {
@@ -129,7 +141,7 @@ export async function updatePlacement(
 export async function getLogbookEntries(): Promise<LogbookEntry[]> {
 	return getDatabase()
 		.prepare(`SELECT ${entryColumns} FROM ${entryTables}`)
-		.all() as unknown as LogbookEntry[];
+		.all().map((row) => toPlainObject(row)) as LogbookEntry[];
 }
 
 export async function getEntriesForStudent(
@@ -140,7 +152,7 @@ export async function getEntriesForStudent(
 			`SELECT ${entryColumns} FROM ${entryTables}
 			WHERE p.student_id = ? ORDER BY e.work_date DESC, e.created_at DESC`,
 		)
-		.all(studentId) as unknown as LogbookEntry[];
+		.all(studentId).map((row) => toPlainObject(row)) as LogbookEntry[];
 }
 
 export async function getEntriesForPlacement(
@@ -151,25 +163,29 @@ export async function getEntriesForPlacement(
 			`SELECT ${entryColumns} FROM ${entryTables}
 			WHERE e.placement_id = ? ORDER BY e.work_date DESC, e.created_at DESC`,
 		)
-		.all(placementId) as unknown as LogbookEntry[];
+		.all(placementId).map((row) => toPlainObject(row)) as LogbookEntry[];
 }
 
 export async function getLogbookEntryById(
 	entryId: string,
 ): Promise<LogbookEntry | undefined> {
-	return getDatabase()
-		.prepare(`SELECT ${entryColumns} FROM ${entryTables} WHERE e.id = ?`)
-		.get(entryId) as unknown as LogbookEntry | undefined;
+	return toPlainObject(
+		getDatabase()
+			.prepare(`SELECT ${entryColumns} FROM ${entryTables} WHERE e.id = ?`)
+			.get(entryId),
+	) as LogbookEntry | undefined;
 }
 
 export async function getLogbookEntryByEvidenceFileName(
 	evidenceFileName: string,
 ): Promise<LogbookEntry | undefined> {
-	return getDatabase()
-		.prepare(
-			`SELECT ${entryColumns} FROM ${entryTables} WHERE e.evidence_file_name = ?`,
-		)
-		.get(evidenceFileName) as unknown as LogbookEntry | undefined;
+	return toPlainObject(
+		getDatabase()
+			.prepare(
+				`SELECT ${entryColumns} FROM ${entryTables} WHERE e.evidence_file_name = ?`,
+			)
+			.get(evidenceFileName),
+	) as LogbookEntry | undefined;
 }
 
 export async function createLogbookEntry(entry: LogbookEntry): Promise<void> {
@@ -197,23 +213,25 @@ export async function createLogbookEntry(entry: LogbookEntry): Promise<void> {
 export async function getVerificationToken(
 	tokenValue: string,
 ): Promise<VerificationToken | undefined> {
-	return getDatabase()
-		.prepare(`SELECT ${tokenColumns} FROM verification_tokens WHERE token = ?`)
-		.get(tokenValue) as unknown as VerificationToken | undefined;
+	return toPlainObject(
+		getDatabase()
+			.prepare(`SELECT ${tokenColumns} FROM verification_tokens WHERE token = ?`)
+			.get(tokenValue),
+	) as VerificationToken | undefined;
 }
 
 export async function getActiveVerificationTokenForEntry(
 	entryId: string,
 ): Promise<VerificationToken | undefined> {
-	return getDatabase()
-		.prepare(
-			`SELECT ${tokenColumns} FROM verification_tokens
-			WHERE entry_id = ? AND used_at IS NULL AND expires_at > ?
-			ORDER BY expires_at DESC LIMIT 1`,
-		)
-		.get(entryId, new Date().toISOString()) as unknown as
-		| VerificationToken
-		| undefined;
+	return toPlainObject(
+		getDatabase()
+			.prepare(
+				`SELECT ${tokenColumns} FROM verification_tokens
+				WHERE entry_id = ? AND used_at IS NULL AND expires_at > ?
+				ORDER BY expires_at DESC LIMIT 1`,
+			)
+			.get(entryId, new Date().toISOString()),
+	) as VerificationToken | undefined;
 }
 
 /** Store the new mentor link and move the entry to pending_verification together. */
