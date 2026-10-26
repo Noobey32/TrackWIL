@@ -4,9 +4,9 @@ TrackWIL is the SPM622 Capstone Project of Group 3 (CTU Training Solutions, Cape
 
 ## About The Project
 
-* **Students** sign up with their CTU student email and add each of their WIL placements with the hours it requires. For each placement they record each day's work (date, description, hours), attach evidence and submit entries for verification. Each placement's logbook shows every entry's status and its verified hours against its required total. Students also upload each placement's WIL documents: the MOU, Commencement Letter and Code of Conduct once, and an Attendance Register every semester.
+* **Students** sign up with their CTU student email and add each of their WIL placements with the hours it requires. For each placement they record each day's work (date, description, hours), attach evidence and submit entries for verification. Each placement's logbook shows every entry's status and its verified hours against its required total. Students also upload each placement's WIL documents: the MOU, Commencement Letter and Code of Conduct once, and an Attendance Register every semester. When a placement's verified hours reach its required hours it is marked *WIL completed* and locked; the student adds their next placement to continue.
 * **Workplace mentors** verify an entry from a secure one-time link, without needing an account. The link expires after 7 days and can be used only once.
-* **WIL coordinators and lecturers** see every student on one dashboard, labelled *On track*, *Awaiting verification* or *Overdue*, with verified hours, pending verifications and missing documents. Selecting a student opens their profile: each placement's hours, documents and full logbook.
+* **WIL coordinators and lecturers** see every student on one dashboard, labelled by their current placement as *On track*, *Awaiting verification*, *Overdue*, *WIL completed* or *No placement*, with verified hours, pending verifications and missing documents. Selecting a student opens their profile: each placement's hours, documents and full logbook.
 
 ## Current Submission (Week 4)
 
@@ -34,10 +34,11 @@ Open http://localhost:3000. The SQLite database is created and filled with synth
 | ----------- | --------------------------- | ----------- |
 | Student     | student1@ctucareer.co.za    | student123  |
 | Student     | student2@ctucareer.co.za    | student123  |
+| Student     | student3@ctucareer.co.za    | student123  |
 | Coordinator | coordinator@ctucareer.co.za | coord123    |
 | Lecturer    | lecturer@ctucareer.co.za    | lecturer123 |
 
-**Testing:** with the app running (`npm run build`, then `npm start`), `npm run test:system` runs the 58 automated system tests. See [05_Source_Code/trackwil/README.md](05_Source_Code/trackwil/README.md) for details.
+**Testing:** with the app running (`npm run build`, then `npm start`), `npm run test:system` runs the 61 automated system tests. See [05_Source_Code/trackwil/README.md](05_Source_Code/trackwil/README.md) for details.
 
 ## Technologies and Architecture
 

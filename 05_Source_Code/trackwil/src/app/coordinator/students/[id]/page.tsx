@@ -7,7 +7,11 @@ import {
 	StudentStatusBadge,
 } from '@/components/status-badge';
 import { documentProgress } from '@/lib/documents';
-import { studentOverviewStatus, sumVerifiedHours } from '@/lib/logbook-metrics';
+import {
+	placementCompletion,
+	studentOverviewStatus,
+	sumVerifiedHours,
+} from '@/lib/logbook-metrics';
 import {
 	getDocumentsForStudent,
 	getEntriesForStudent,
@@ -42,7 +46,13 @@ export default async function StudentProfilePage({
 		(entry) => entry.status === 'pending_verification',
 	).length;
 	const paperwork = placements
-		.map((placement) => documentProgress(placement, documents))
+		.map((placement) =>
+			documentProgress(
+				placement,
+				documents,
+				placementCompletion(placement, entries).completedOn,
+			),
+		)
 		.reduce(
 			(total, progress) => ({
 				uploaded:
@@ -66,7 +76,9 @@ export default async function StudentProfilePage({
 					<h1 className='text-2xl font-semibold text-zinc-900'>
 						{student.fullName}
 					</h1>
-					<StudentStatusBadge status={studentOverviewStatus(entries)} />
+					<StudentStatusBadge
+						status={studentOverviewStatus(placements, entries)}
+					/>
 				</div>
 				<p className='mt-1 text-sm text-zinc-600'>{student.email}</p>
 			</div>
@@ -108,6 +120,7 @@ export default async function StudentProfilePage({
 				const placementEntries = entries.filter(
 					(entry) => entry.placementId === placement.id,
 				);
+				const completion = placementCompletion(placement, placementEntries);
 				return (
 					<section
 						key={placement.id}
@@ -116,11 +129,19 @@ export default async function StudentProfilePage({
 					>
 						<div className='space-y-3'>
 							<div>
-								<h2 className='text-xl font-semibold text-zinc-900'>
-									{placement.title}
-								</h2>
+								<div className='flex flex-wrap items-center gap-2'>
+									<h2 className='text-xl font-semibold text-zinc-900'>
+										{placement.title}
+									</h2>
+									{completion.completed ? (
+										<StudentStatusBadge status='wil_completed' />
+									) : null}
+								</div>
 								<p className='text-sm text-zinc-600'>
 									{placement.companyName} · started {placement.startDate}
+									{completion.completedOn
+										? ` · completed ${completion.completedOn}`
+										: ''}
 								</p>
 							</div>
 							<div className='max-w-md'>
@@ -137,6 +158,7 @@ export default async function StudentProfilePage({
 								(document) => document.placementId === placement.id,
 							)}
 							canEdit={false}
+							completedOn={completion.completedOn}
 						/>
 
 						<div className='space-y-3'>

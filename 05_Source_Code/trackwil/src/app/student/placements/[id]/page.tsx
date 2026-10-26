@@ -2,13 +2,19 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { HoursProgress } from '@/components/hours-progress';
 import { PlacementDocuments } from '@/components/placement-documents';
-import { EntryStatusBadge } from '@/components/status-badge';
+import {
+	EntryStatusBadge,
+	StudentStatusBadge,
+} from '@/components/status-badge';
 import {
 	getDocumentsForPlacement,
 	getEntriesForPlacement,
 	getPlacementById,
 } from '@/lib/repository';
-import { sumVerifiedHours } from '@/lib/logbook-metrics';
+import {
+	placementCompletion,
+	sumVerifiedHours,
+} from '@/lib/logbook-metrics';
 import { requireRole } from '@/lib/session';
 
 export default async function PlacementLogbookPage({
@@ -26,6 +32,7 @@ export default async function PlacementLogbookPage({
 
 	const entries = await getEntriesForPlacement(placement.id);
 	const documents = await getDocumentsForPlacement(placement.id);
+	const completion = placementCompletion(placement, entries);
 
 	return (
 		<div className='space-y-8'>
@@ -35,27 +42,54 @@ export default async function PlacementLogbookPage({
 				</Link>
 				<section className='mt-2 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between'>
 					<div>
-						<h1 className='text-2xl font-semibold text-zinc-900'>
-							{placement.title} logbook
-						</h1>
+						<div className='flex flex-wrap items-center gap-3'>
+							<h1 className='text-2xl font-semibold text-zinc-900'>
+								{placement.title} logbook
+							</h1>
+							{completion.completed ? (
+								<StudentStatusBadge status='wil_completed' />
+							) : null}
+						</div>
 						<p className='mt-1 text-sm text-zinc-600'>
-							{placement.companyName} · started {placement.startDate} ·{' '}
-							<Link
-								href={`/student/placements/${placement.id}/edit`}
-								className='underline'
-							>
-								Edit placement
-							</Link>
+							{placement.companyName} · started {placement.startDate}
+							{completion.completed ? (
+								<> · completed {completion.completedOn}</>
+							) : (
+								<>
+									{' '}
+									·{' '}
+									<Link
+										href={`/student/placements/${placement.id}/edit`}
+										className='underline'
+									>
+										Edit placement
+									</Link>
+								</>
+							)}
 						</p>
 					</div>
-					<Link
-						href={`/student/entries/new?placement=${placement.id}`}
-						className='inline-flex rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800'
-					>
-						New entry
-					</Link>
+					{completion.completed ? null : (
+						<Link
+							href={`/student/entries/new?placement=${placement.id}`}
+							className='inline-flex rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800'
+						>
+							New entry
+						</Link>
+					)}
 				</section>
 			</div>
+
+			{completion.completed ? (
+				<p className='rounded-md border border-sky-200 bg-sky-50 p-4 text-sm text-sky-800'>
+					This WIL placement is completed: its required hours have been
+					verified. It is now locked, so entries and documents can no longer
+					be added or changed.{' '}
+					<Link href='/student/placements/new' className='font-medium underline'>
+						Add your next WIL placement
+					</Link>{' '}
+					to continue.
+				</p>
+			) : null}
 
 			<section className='max-w-md'>
 				<HoursProgress
@@ -67,7 +101,8 @@ export default async function PlacementLogbookPage({
 			<PlacementDocuments
 				placement={placement}
 				documents={documents}
-				canEdit
+				canEdit={!completion.completed}
+				completedOn={completion.completedOn}
 			/>
 
 			<section className='space-y-3'>

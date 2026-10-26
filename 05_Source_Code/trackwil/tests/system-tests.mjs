@@ -1,4 +1,4 @@
-// TrackWIL system test suite: runs every automated test case (TC-110 to TC-166) against a running
+// TrackWIL system test suite: runs every automated test case (TC-110 to TC-169) against a running
 // server and the SQLite database, and prints one line per test with the actual result.
 // Usage: npm run build && npm start, then in another terminal: npm run test:system
 // The tests add entries to the database; run npm run db:reset afterwards to restore the demo data.
@@ -288,19 +288,24 @@ mouRows = docRows(newPlacementId, "mou");
 const secondStored = mouRows[0]?.stored_file_name;
 record("TC-153", "Uploading a document again replaces the previous file", mouRows.length === 1 && secondStored !== firstStored && !existsSync(path.join(documentsDir, firstStored)) && mouRows[0].original_file_name === "Signed MOU v2.pdf", `MOU rows: ${mouRows.length}; new file ${secondStored}; old file removed: ${!existsSync(path.join(documentsDir, firstStored))}`);
 
-// Dylan's WIL 1 started about 240 days ago, so it spans two semesters; one register is seeded.
+// A placement that started 200 days ago always spans two semesters (a semester is about 182 days).
+const semesterOfDate = (d) => `${d.getUTCFullYear()}-S${d.getUTCMonth() < 6 ? 1 : 2}`;
 const nowDate = new Date();
-const currentSemester = `${nowDate.getUTCFullYear()}-S${nowDate.getUTCMonth() < 6 ? 1 : 2}`;
-const registersBefore = docRows("placement-dylan-1", "attendance_register").map((d) => d.semester);
-r = await upload(dylan, "placement-dylan-1", "attendance_register", pdfFile("Register.pdf", fakePdf("register")), currentSemester);
-await upload(dylan, "placement-dylan-1", "attendance_register", pdfFile("Register again.pdf", fakePdf("register again")), currentSemester);
-const registersAfter = docRows("placement-dylan-1", "attendance_register").map((d) => d.semester);
+const currentSemester = semesterOfDate(nowDate);
+const longStart = new Date(nowDate.getTime() - 200 * 86400000);
+r = await form("createPlacementAction", { title: "WIL 2", companyName: "Two Semester Host", requiredHours: "400", startDate: longStart.toISOString().slice(0, 10) }, newStudent);
+const longPlacementId = r.redirect.split("/student/placements/")[1];
+const registersBefore = docRows(longPlacementId, "attendance_register").map((d) => d.semester);
+r = await upload(newStudent, longPlacementId, "attendance_register", pdfFile("Register.pdf", fakePdf("register")), currentSemester);
+await upload(newStudent, longPlacementId, "attendance_register", pdfFile("Register again.pdf", fakePdf("register again")), currentSemester);
+await upload(newStudent, longPlacementId, "attendance_register", pdfFile("First register.pdf", fakePdf("first register")), semesterOfDate(longStart));
+const registersAfter = docRows(longPlacementId, "attendance_register").map((d) => d.semester);
 const badSemesters = [];
 for (const semester of ["2026-S3", "2020-S1", "2099-S1", ""]) {
-  const b = await upload(dylan, "placement-dylan-1", "attendance_register", pdfFile("Register.pdf", fakePdf("bad")), semester);
+  const b = await upload(newStudent, longPlacementId, "attendance_register", pdfFile("Register.pdf", fakePdf("bad")), semester);
   badSemesters.push(`"${semester}" -> "${errorOf(b.text)}"`);
 }
-record("TC-154", "Attendance registers are kept once per semester", r.text.includes('"success":true') && registersAfter.length === registersBefore.length + 1 && new Set(registersAfter).size === registersAfter.length && badSemesters.every((x) => !x.includes("(no error)")), `registers before: ${registersBefore.join(", ")}; after uploading ${currentSemester} twice: ${registersAfter.join(", ")}; ${badSemesters.join("; ")}`);
+record("TC-154", "Attendance registers are kept once per semester", r.text.includes('"success":true') && registersBefore.length === 0 && registersAfter.length === 2 && new Set(registersAfter).size === 2 && badSemesters.every((x) => !x.includes("(no error)")), `registers before: ${registersBefore.length}; after uploading ${currentSemester} twice and ${semesterOfDate(longStart)} once: ${registersAfter.join(", ")}; ${badSemesters.join("; ")}`);
 
 const badFiles = [];
 for (const [label, file, type] of [
@@ -348,6 +353,39 @@ const bigPdf = fakePdf("large scan", 9.5 * 1024 * 1024);
 r = await upload(newStudent, newPlacementId, "code_of_conduct", pdfFile("Scanned code of conduct.pdf", bigPdf));
 const bigRow = docRows(newPlacementId, "code_of_conduct")[0];
 record("TC-160", "A 9.5 MB scanned document uploads through the student page", r.text.includes('"success":true') && bigRow?.file_size === bigPdf.length && statSync(path.join(documentsDir, bigRow.stored_file_name)).size === bigPdf.length, `response: ${r.text.includes('"success":true') ? "success" : errorOf(r.text) + " (status " + r.status + ")"}; stored size ${bigRow?.file_size ?? "none"} of ${bigPdf.length} bytes`);
+
+// ---------------------------------------------------------------- FR-18 WIL completion
+const today = new Date().toISOString().slice(0, 10);
+r = await form("createPlacementAction", { title: "WIL 3", companyName: "Short Course Host", requiredHours: "4", startDate: today }, newStudent);
+const quickId = r.redirect.split("/student/placements/")[1];
+const quickEntry = (await form("createLogbookEntryAction", { placementId: quickId, workDate: today, description: "Worked the four required hours.", hours: "4", mentorEmail: "mentor@host.co.za" }, newStudent)).redirect.split("/student/entries/")[1];
+const draftLeft = (await form("createLogbookEntryAction", { placementId: quickId, workDate: today, description: "A draft left after the hours were met.", hours: "2", mentorEmail: "mentor@host.co.za" }, newStudent)).redirect.split("/student/entries/")[1];
+const beforeApproval = await get(`/student/placements/${quickId}`, newStudent);
+const quickToken = (await args("submitEntryForVerificationAction", [quickEntry], newStudent)).text.match(/"token":"([0-9a-f]+)"/)[1];
+await args("mentorDecisionAction", [quickToken, "approved"]);
+const afterApproval = await get(`/student/placements/${quickId}`, newStudent);
+const dashNow = await get("/coordinator", coord);
+const statusIn = (html, name) => { const i = html.indexOf(name); const rowHtml = html.slice(i, html.indexOf("</tr>", i)); return ["On track", "Awaiting verification", "Overdue", "WIL completed", "No placement"].find((x) => rowHtml.includes(x)); };
+const dylanProfile = await get("/coordinator/students/student-1", coord);
+record("TC-167", "A placement is completed automatically when its verified hours reach the required hours", !beforeApproval.text.includes("WIL completed") && afterApproval.text.includes("WIL completed") && !afterApproval.text.includes("New entry") && statusIn(dashNow.text, "Lerato Mokoena") === "WIL completed" && dylanProfile.text.includes("WIL completed"), `4-hour placement before approval completed: ${beforeApproval.text.includes("WIL completed")}; after approval: ${afterApproval.text.includes("WIL completed")} (New entry button hidden: ${!afterApproval.text.includes("New entry")}); Lerato on dashboard: ${statusIn(dashNow.text, "Lerato Mokoena")}; Dylan's profile marks WIL 1 completed: ${dylanProfile.text.includes("WIL completed")}`);
+
+const locked = [
+  ["new entry", await form("createLogbookEntryAction", { placementId: quickId, workDate: today, description: "Too late.", hours: "1", mentorEmail: "m@host.co.za" }, newStudent)],
+  ["submit remaining draft", await args("submitEntryForVerificationAction", [draftLeft], newStudent)],
+  ["upload document", await upload(newStudent, quickId, "mou", pdfFile("MOU.pdf", fakePdf("late MOU")))],
+  ["edit placement", await form("updatePlacementAction", { placementId: quickId, title: "WIL 3", companyName: "Short Course Host", requiredHours: "40", startDate: today }, newStudent)],
+  ["remove document (Dylan, WIL 1)", await args("deleteDocumentAction", ["document-5"], dylan)],
+].map(([label, res]) => `${label} -> "${errorOf(res.text)}"`);
+const quickEntries = db.prepare("SELECT COUNT(*) c FROM logbook_entries WHERE placement_id = ?").get(quickId).c;
+const dylanMouKept = !!db.prepare("SELECT 1 FROM placement_documents WHERE id = 'document-5'").get();
+record("TC-168", "A completed placement is locked against entries, submissions, documents and edits", locked.every((x) => x.includes("completed and locked")) && quickEntries === 2 && entryRow(draftLeft).status === "draft" && placementRow(quickId).required_hours === 4 && dylanMouKept, locked.join("; ") + `; entries still ${quickEntries}; draft still ${entryRow(draftLeft).status}; required hours still ${placementRow(quickId).required_hours}; Dylan's MOU kept: ${dylanMouKept}`);
+
+const freshEmail = `${year}0198@ctucareer.co.za`;
+const fresh = session((await form("signupAction", { fullName: "Fresh Student", email: freshEmail, password: "Strong#Pass1" }, "", {}, "/signup")).setCookie);
+const freshBefore = statusIn((await get("/coordinator", coord)).text, "Fresh Student");
+await form("createPlacementAction", { title: "WIL 1", companyName: "Brand New Host", requiredHours: "200", startDate: today }, fresh);
+const freshAfter = statusIn((await get("/coordinator", coord)).text, "Fresh Student");
+record("TC-169", "A student without a placement shows No placement; a new placement is not overdue", freshBefore === "No placement" && freshAfter === "On track", `before adding a placement: ${freshBefore}; after adding one that starts today: ${freshAfter}`);
 
 // ---------------------------------------------------------------- FR-12 timestamps
 const t = db.prepare("SELECT created_at, updated_at, verified_at FROM logbook_entries WHERE id=?").get(draftId);

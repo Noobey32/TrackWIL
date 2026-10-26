@@ -1,7 +1,8 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { PlacementForm } from '@/components/placement-form';
-import { getPlacementById } from '@/lib/repository';
+import { placementCompletion } from '@/lib/logbook-metrics';
+import { getEntriesForPlacement, getPlacementById } from '@/lib/repository';
 import { requireRole } from '@/lib/session';
 
 export default async function EditPlacementPage({
@@ -16,6 +17,10 @@ export default async function EditPlacementPage({
 	if (!placement || placement.studentId !== user.id) {
 		notFound();
 	}
+	const { completed } = placementCompletion(
+		placement,
+		await getEntriesForPlacement(placement.id),
+	);
 
 	return (
 		<div className='mx-auto max-w-xl space-y-6'>
@@ -31,7 +36,14 @@ export default async function EditPlacementPage({
 				</h1>
 			</div>
 			<div className='rounded-lg border border-zinc-200 bg-white p-6'>
-				<PlacementForm placement={placement} />
+				{completed ? (
+					<p className='text-sm text-zinc-600'>
+						This WIL placement is completed and locked, so it can no longer be
+						edited.
+					</p>
+				) : (
+					<PlacementForm placement={placement} />
+				)}
 			</div>
 		</div>
 	);

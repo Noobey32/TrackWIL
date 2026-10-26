@@ -18,10 +18,15 @@ import {
 	maxDocumentBytes,
 	semestersForPlacement,
 } from '@/lib/documents';
+import {
+	completedPlacementError,
+	placementCompletion,
+} from '@/lib/logbook-metrics';
 import { documentsDirectory } from '@/lib/paths';
 import {
 	deleteDocument,
 	getDocumentById,
+	getEntriesForPlacement,
 	getPlacementById,
 	saveDocument,
 } from '@/lib/repository';
@@ -51,6 +56,12 @@ export async function uploadDocumentAction(formData: FormData) {
 	const placement = await getPlacementById(placementId);
 	if (!placement || placement.studentId !== user.id) {
 		return { error: 'Placement not found.' };
+	}
+	if (
+		placementCompletion(placement, await getEntriesForPlacement(placement.id))
+			.completed
+	) {
+		return { error: completedPlacementError };
 	}
 
 	const documentType = String(formData.get('documentType') ?? '') as DocumentType;
@@ -121,6 +132,14 @@ export async function deleteDocumentAction(documentId: string) {
 	const document = await getDocumentById(documentId);
 	if (!document || document.studentId !== user.id) {
 		return { error: 'Document not found.' };
+	}
+	const placement = await getPlacementById(document.placementId);
+	if (
+		placement &&
+		placementCompletion(placement, await getEntriesForPlacement(placement.id))
+			.completed
+	) {
+		return { error: completedPlacementError };
 	}
 
 	await deleteDocument(document.id);

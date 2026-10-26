@@ -26,16 +26,19 @@ type DocumentSlot = {
 
 /**
  * A placement's WIL documents: the once-off documents and one attendance register per semester.
- * Students (canEdit) can upload, replace and remove; staff only view.
+ * Students (canEdit) can upload, replace and remove; staff only view. A completed placement
+ * (completedOn set) only lists registers up to the semester it was completed in.
  */
 export function PlacementDocuments({
 	placement,
 	documents,
 	canEdit,
+	completedOn = null,
 }: {
 	placement: WilPlacement;
 	documents: PlacementDocument[];
 	canEdit: boolean;
+	completedOn?: string | null;
 }) {
 	const onceOffSlots: DocumentSlot[] = oncePerPlacementDocumentTypes.map(
 		(documentType) => ({
@@ -46,10 +49,14 @@ export function PlacementDocuments({
 			canUpload: true,
 		}),
 	);
-	const validSemesters = semestersForPlacement(placement.startDate);
+	const validSemesters = semestersForPlacement(
+		placement.startDate,
+		completedOn,
+	);
 	const registerSlots: DocumentSlot[] = attendanceSemesters(
 		placement,
 		documents,
+		completedOn,
 	).map((semester) => ({
 		key: `attendance_register-${semester}`,
 		label: semesterLabel(semester),
