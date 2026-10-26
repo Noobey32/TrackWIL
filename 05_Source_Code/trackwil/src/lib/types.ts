@@ -1,4 +1,4 @@
-/** Shared shapes for JSON persistence and UI. */
+/** Shared shapes for the repository (database rows) and the UI. */
 
 export type UserRole = 'student' | 'coordinator' | 'lecturer';
 

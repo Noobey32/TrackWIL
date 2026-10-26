@@ -30,8 +30,9 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
+# env files (the example file is committed; real settings are not)
 .env*
+!.env.example
 
 # vercel
 .vercel
@@ -40,7 +41,7 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# local evidence uploads (JSON seed data stays in git)
+# uploaded evidence and WIL documents (only the folder placeholder is kept)
 /data/uploads/*
 !/data/uploads/.gitkeep
 

@@ -1,1 +1,9 @@
 AGENTS.md
+
+# Temporary lock files Word, Excel and PowerPoint create while a document is open
+~$*
+
+# Operating system files
+.DS_Store
+Thumbs.db
+desktop.ini
