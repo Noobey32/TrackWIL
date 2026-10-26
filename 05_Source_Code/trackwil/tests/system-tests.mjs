@@ -1,4 +1,4 @@
-// TrackWIL system test suite: runs every automated test case (TC-110 to TC-169) against a running
+// TrackWIL system test suite: runs every automated test case (TC-110 to TC-144 and TC-150 to TC-175) against a running
 // server and the SQLite database, and prints one line per test with the actual result.
 // Usage: npm run build && npm start, then in another terminal: npm run test:system
 // The tests add entries to the database; run npm run db:reset afterwards to restore the demo data.
@@ -67,6 +67,11 @@ const r2 = await form("loginAction", { email: "lecturer@ctucareer.co.za", passwo
 const lect = session(r2.setCookie);
 record("TC-112", "Coordinator and lecturer sign in to /coordinator", r.redirect === "/coordinator" && r2.redirect === "/coordinator", `coordinator -> ${r.redirect}; lecturer -> ${r2.redirect}`);
 
+const signInPage = await get("/");
+const demoAccounts = ["student1@ctucareer.co.za", "student2@ctucareer.co.za", "student3@ctucareer.co.za", "coordinator@ctucareer.co.za", "lecturer@ctucareer.co.za"];
+const listed = demoAccounts.filter((a) => signInPage.text.includes(a));
+record("TC-175", "Sign-in page lists every demo account (DEF-05 retest)", listed.length === demoAccounts.length, `listed ${listed.length} of ${demoAccounts.length}: ${listed.join(", ")}`);
+
 // ---------------------------------------------------------------- FR-02 sign-up
 const year = new Date().getFullYear();
 const newEmail = `${year}0199@ctucareer.co.za`;
@@ -107,7 +112,7 @@ r = await form("createPlacementAction", { title: "WIL 1", companyName: "Test Hos
 const newPlacementId = r.redirect.split("/student/placements/")[1];
 const np = newPlacementId ? placementRow(newPlacementId) : null;
 const newStudentId = db.prepare("SELECT id FROM users WHERE email=?").get(newEmail).id;
-record("TC-145", "Student adds a WIL placement with its own required hours", !!np && np.required_hours === 320 && np.student_id === newStudentId, `redirect=${r.redirect}; title=${np?.title}; company=${np?.company_name}; required hours=${np?.required_hours}`);
+record("TC-150", "Student adds a WIL placement with its own required hours", !!np && np.required_hours === 320 && np.student_id === newStudentId, `redirect=${r.redirect}; title=${np?.title}; company=${np?.company_name}; required hours=${np?.required_hours}`);
 const badPlacements = [];
 for (const [fields, label] of [
   [{ title: "WIL 2", companyName: "Host", requiredHours: "0", startDate: "2026-10-01" }, "0 hours"],
@@ -121,20 +126,20 @@ for (const [fields, label] of [
   badPlacements.push(`${label} -> "${errorOf(b.text)}"`);
 }
 const extraPlacements = db.prepare("SELECT COUNT(*) c FROM wil_placements WHERE student_id = ? AND id <> ?").get(newStudentId, newPlacementId ?? "").c;
-record("TC-146", "Invalid placement details are rejected", badPlacements.every((x) => !x.includes("(no error)")) && extraPlacements === 0, badPlacements.join("; ") + `; extra placements saved: ${extraPlacements}`);
+record("TC-151", "Invalid placement details are rejected", badPlacements.every((x) => !x.includes("(no error)")) && extraPlacements === 0, badPlacements.join("; ") + `; extra placements saved: ${extraPlacements}`);
 await form("updatePlacementAction", { placementId: newPlacementId, title: "WIL 1", companyName: "Test Host Company", requiredHours: "300", startDate: "2026-10-01" }, newStudent);
 const editedHours = placementRow(newPlacementId)?.required_hours;
 const otherEdit = await form("updatePlacementAction", { placementId: sihlePlacement, title: "Taken over", companyName: "X", requiredHours: "1", startDate: "2026-10-01" }, newStudent);
-record("TC-147", "Student can edit their own placement but not another student's", editedHours === 300 && otherEdit.text.includes("Placement not found") && placementRow(sihlePlacement).required_hours === 200, `own placement now ${editedHours} hours; editing Sihle's placement -> "${errorOf(otherEdit.text)}"; Sihle's hours still ${placementRow(sihlePlacement).required_hours}`);
+record("TC-152", "Student can edit their own placement but not another student's", editedHours === 300 && otherEdit.text.includes("Placement not found") && placementRow(sihlePlacement).required_hours === 200, `own placement now ${editedHours} hours; editing Sihle's placement -> "${errorOf(otherEdit.text)}"; Sihle's hours still ${placementRow(sihlePlacement).required_hours}`);
 r = await form("createLogbookEntryAction", { placementId: sihlePlacement, workDate: "2026-10-22", description: "Entry on another student's placement.", hours: "2", mentorEmail: "m@host.co.za" }, newStudent);
 const r4 = await form("createLogbookEntryAction", { placementId: "no-such-placement", workDate: "2026-10-22", description: "Entry without a placement.", hours: "2", mentorEmail: "m@host.co.za" }, newStudent);
-record("TC-148", "Entries can only be added to the student's own placement", r.text.includes("Choose one of your WIL placements") && r4.text.includes("Choose one of your WIL placements"), `Sihle's placement -> "${errorOf(r.text)}"; unknown placement -> "${errorOf(r4.text)}"`);
+record("TC-153", "Entries can only be added to the student's own placement", r.text.includes("Choose one of your WIL placements") && r4.text.includes("Choose one of your WIL placements"), `Sihle's placement -> "${errorOf(r.text)}"; unknown placement -> "${errorOf(r4.text)}"`);
 r = await get(`/student/placements/${sihlePlacement}`, newStudent);
 const r5 = await get(`/student/placements/${newPlacementId}`, newStudent);
-record("TC-149", "Student cannot open another student's placement", !r.text.includes("Table Bay Engineering") && r5.text.includes("Test Host Company"), `Sihle's placement shown: ${r.text.includes("Table Bay Engineering")}; own placement shown: ${r5.text.includes("Test Host Company")}`);
+record("TC-154", "Student cannot open another student's placement", !r.text.includes("Table Bay Engineering") && r5.text.includes("Test Host Company"), `Sihle's placement shown: ${r.text.includes("Table Bay Engineering")}; own placement shown: ${r5.text.includes("Test Host Company")}`);
 const newEntryPage = await get(`/student/entries/new?placement=${newPlacementId}`, newStudent);
 const editPage = await get(`/student/placements/${newPlacementId}/edit`, newStudent);
-record("TC-151", "New entry and edit placement pages open with the student's placements", newEntryPage.status === 200 && newEntryPage.text.includes("Test Host Company") && editPage.status === 200 && editPage.text.includes("Save changes"), `new entry page ${newEntryPage.status} (placement listed: ${newEntryPage.text.includes("Test Host Company")}); edit page ${editPage.status} (form shown: ${editPage.text.includes("Save changes")})`);
+record("TC-156", "New entry and edit placement pages open with the student's placements", newEntryPage.status === 200 && newEntryPage.text.includes("Test Host Company") && editPage.status === 200 && editPage.text.includes("Save changes"), `new entry page ${newEntryPage.status} (placement listed: ${newEntryPage.text.includes("Test Host Company")}); edit page ${editPage.status} (form shown: ${editPage.text.includes("Save changes")})`);
 
 // ---------------------------------------------------------------- FR-04 / FR-05 entries and evidence
 r = await form("createLogbookEntryAction", { placementId: sihlePlacement, workDate: "2026-10-22", description: "Test entry: updated the asset register.", hours: "4.5", mentorEmail: "mentor@host.co.za" }, sihle);
@@ -240,14 +245,14 @@ record("TC-139", "Dashboard shows each student's status, hours and pending count
 const profile = await get("/coordinator/students/student-1", coord);
 const profileHas = (text) => profile.text.includes(text);
 const readOnly = !profileHas("name=\"file\"") && !profileHas(">Replace<") && !profileHas(">Remove<");
-record("TC-161", "Coordinator opens a student's profile with placements, logbook and documents", profile.status === 200 && profileHas("Dylan Shepard") && profileHas("Cape Legal Services") && profileHas("Harbour Admin Solutions") && profileHas("Assisted with customer intake forms") && profileHas("/api/documents/document-1") && profileHas("Memorandum of Understanding (MOU)") && readOnly, `status ${profile.status}; both placements: ${profileHas("Cape Legal Services") && profileHas("Harbour Admin Solutions")}; logbook entry shown: ${profileHas("Assisted with customer intake forms")}; document link shown: ${profileHas("/api/documents/document-1")}; read-only (no upload/replace/remove): ${readOnly}`);
+record("TC-166", "Coordinator opens a student's profile with placements, logbook and documents", profile.status === 200 && profileHas("Dylan Shepard") && profileHas("Cape Legal Services") && profileHas("Harbour Admin Solutions") && profileHas("Assisted with customer intake forms") && profileHas("/api/documents/document-1") && profileHas("Memorandum of Understanding (MOU)") && readOnly, `status ${profile.status}; both placements: ${profileHas("Cape Legal Services") && profileHas("Harbour Admin Solutions")}; logbook entry shown: ${profileHas("Assisted with customer intake forms")}; document link shown: ${profileHas("/api/documents/document-1")}; read-only (no upload/replace/remove): ${readOnly}`);
 const lectProfile = await get("/coordinator/students/student-2", lect);
-record("TC-162", "Lecturer can open a student's profile", lectProfile.status === 200 && lectProfile.text.includes("Sihle Kayise") && lectProfile.text.includes("Table Bay Engineering"), `status ${lectProfile.status}; shows Sihle and her placement: ${lectProfile.text.includes("Sihle Kayise") && lectProfile.text.includes("Table Bay Engineering")}`);
+record("TC-167", "Lecturer can open a student's profile", lectProfile.status === 200 && lectProfile.text.includes("Sihle Kayise") && lectProfile.text.includes("Table Bay Engineering"), `status ${lectProfile.status}; shows Sihle and her placement: ${lectProfile.text.includes("Sihle Kayise") && lectProfile.text.includes("Table Bay Engineering")}`);
 const studentTry = await get("/coordinator/students/student-1", sihle);
-record("TC-163", "Students cannot open the staff student profile", blocked(studentTry, "Back to dashboard") && !studentTry.text.includes("Harbour Admin Solutions"), `status ${studentTry.status}; Dylan's placement in the response to Sihle: ${studentTry.text.includes("Harbour Admin Solutions")}`);
+record("TC-168", "Students cannot open the staff student profile", blocked(studentTry, "Back to dashboard") && !studentTry.text.includes("Harbour Admin Solutions"), `status ${studentTry.status}; Dylan's placement in the response to Sihle: ${studentTry.text.includes("Harbour Admin Solutions")}`);
 const notStudent = await get("/coordinator/students/coordinator-1", coord);
 const unknownStudent = await get("/coordinator/students/no-such-student", coord);
-record("TC-164", "Profile of an unknown user or a staff account is not found", notStudent.status === 404 && unknownStudent.status === 404, `coordinator account -> ${notStudent.status}; unknown id -> ${unknownStudent.status}`);
+record("TC-169", "Profile of an unknown user or a staff account is not found", notStudent.status === 404 && unknownStudent.status === 404, `coordinator account -> ${notStudent.status}; unknown id -> ${unknownStudent.status}`);
 const leakChecks = [
   ["student -> /coordinator", await get("/coordinator", sihle), ["student1@ctucareer.co.za", "20240053@ctucareer.co.za"]],
   ["made-up cookie -> /coordinator", await get("/coordinator", "trackwil_session=anything"), ["student1@ctucareer.co.za", "20240053@ctucareer.co.za"]],
@@ -255,10 +260,10 @@ const leakChecks = [
   ["made-up cookie -> student profile", await get("/coordinator/students/student-2", "trackwil_session=anything"), ["Table Bay Engineering"]],
   ["coordinator -> a student's placement page", await get(`/student/placements/${sihlePlacement}`, coord), ["Table Bay Engineering"]],
 ].map(([label, res, secrets]) => ({ label, status: res.status, leaked: secrets.filter((x) => res.text.includes(x)) }));
-record("TC-166", "Blocked pages send none of their data in the redirect response (DEF-07 retest)", leakChecks.every((c) => c.leaked.length === 0 && c.status >= 300 && c.status < 400), leakChecks.map((c) => `${c.label}: ${c.status}, leaked ${c.leaked.length ? c.leaked.join(", ") : "nothing"}`).join("; "));
+record("TC-171", "Blocked pages send none of their data in the redirect response (DEF-07 retest)", leakChecks.every((c) => c.leaked.length === 0 && c.status >= 300 && c.status < 400), leakChecks.map((c) => `${c.label}: ${c.status}, leaked ${c.leaked.length ? c.leaked.join(", ") : "nothing"}`).join("; "));
 const dashRow = (name) => { const i = dashboardText.indexOf(name); return dashboardText.slice(i, dashboardText.indexOf("</tr>", i)); };
 const linked = ["student-1", "student-2"].every((id) => dashboardText.includes(`href="/coordinator/students/${id}"`));
-record("TC-165", "Dashboard links to each student and shows missing documents", linked && dashRow("Moe Green").includes("missing") && dashRow("Sihle Kayise").includes("missing") && dashboardText.includes("Documents"), `profile links: ${linked}; Moe row shows missing: ${dashRow("Moe Green").includes("missing")}; Sihle row shows missing: ${dashRow("Sihle Kayise").includes("missing")}`);
+record("TC-170", "Dashboard links to each student and shows missing documents", linked && dashRow("Moe Green").includes("missing") && dashRow("Sihle Kayise").includes("missing") && dashboardText.includes("Documents"), `profile links: ${linked}; Moe row shows missing: ${dashRow("Moe Green").includes("missing")}; Sihle row shows missing: ${dashRow("Sihle Kayise").includes("missing")}`);
 
 const dylan = await login("student1@ctucareer.co.za", "student123");
 const overview = await get("/student", dylan);
@@ -268,7 +273,7 @@ const perPlacement = ["placement-dylan-1", "placement-dylan-2"].map((id) => {
   const shown = overview.text.includes(`${h}<!-- --> of <!-- -->${pl.required_hours}`) || overview.text.includes(`${h} of ${pl.required_hours}`);
   return { label: `${pl.title} ${h} of ${pl.required_hours}`, shown };
 });
-record("TC-150", "Verified hours are counted separately for each placement", perPlacement.every((x) => x.shown), perPlacement.map((x) => `${x.label} shown: ${x.shown}`).join("; "));
+record("TC-155", "Verified hours are counted separately for each placement", perPlacement.every((x) => x.shown), perPlacement.map((x) => `${x.label} shown: ${x.shown}`).join("; "));
 
 // ---------------------------------------------------------------- FR-16 WIL documents
 const documentsDir = path.join(appDir, "data/uploads/documents");
@@ -281,12 +286,12 @@ const upload = (cookie, placementId, documentType, file, semester) =>
 r = await upload(newStudent, newPlacementId, "mou", pdfFile("Signed MOU.pdf", fakePdf("first MOU")));
 let mouRows = docRows(newPlacementId, "mou");
 const firstStored = mouRows[0]?.stored_file_name;
-record("TC-152", "Student uploads an MOU for their placement", r.text.includes('"success":true') && mouRows.length === 1 && /^[0-9a-f-]{36}\.pdf$/.test(firstStored ?? "") && existsSync(path.join(documentsDir, firstStored)) && mouRows[0].original_file_name === "Signed MOU.pdf", `stored as ${firstStored}; file on disk: ${firstStored ? existsSync(path.join(documentsDir, firstStored)) : false}; name shown to users "${mouRows[0]?.original_file_name}"`);
+record("TC-157", "Student uploads an MOU for their placement", r.text.includes('"success":true') && mouRows.length === 1 && /^[0-9a-f-]{36}\.pdf$/.test(firstStored ?? "") && existsSync(path.join(documentsDir, firstStored)) && mouRows[0].original_file_name === "Signed MOU.pdf", `stored as ${firstStored}; file on disk: ${firstStored ? existsSync(path.join(documentsDir, firstStored)) : false}; name shown to users "${mouRows[0]?.original_file_name}"`);
 
 r = await upload(newStudent, newPlacementId, "mou", pdfFile("Signed MOU v2.pdf", fakePdf("second MOU")));
 mouRows = docRows(newPlacementId, "mou");
 const secondStored = mouRows[0]?.stored_file_name;
-record("TC-153", "Uploading a document again replaces the previous file", mouRows.length === 1 && secondStored !== firstStored && !existsSync(path.join(documentsDir, firstStored)) && mouRows[0].original_file_name === "Signed MOU v2.pdf", `MOU rows: ${mouRows.length}; new file ${secondStored}; old file removed: ${!existsSync(path.join(documentsDir, firstStored))}`);
+record("TC-158", "Uploading a document again replaces the previous file", mouRows.length === 1 && secondStored !== firstStored && !existsSync(path.join(documentsDir, firstStored)) && mouRows[0].original_file_name === "Signed MOU v2.pdf", `MOU rows: ${mouRows.length}; new file ${secondStored}; old file removed: ${!existsSync(path.join(documentsDir, firstStored))}`);
 
 // A placement that started 200 days ago always spans two semesters (a semester is about 182 days).
 const semesterOfDate = (d) => `${d.getUTCFullYear()}-S${d.getUTCMonth() < 6 ? 1 : 2}`;
@@ -305,7 +310,7 @@ for (const semester of ["2026-S3", "2020-S1", "2099-S1", ""]) {
   const b = await upload(newStudent, longPlacementId, "attendance_register", pdfFile("Register.pdf", fakePdf("bad")), semester);
   badSemesters.push(`"${semester}" -> "${errorOf(b.text)}"`);
 }
-record("TC-154", "Attendance registers are kept once per semester", r.text.includes('"success":true') && registersBefore.length === 0 && registersAfter.length === 2 && new Set(registersAfter).size === 2 && badSemesters.every((x) => !x.includes("(no error)")), `registers before: ${registersBefore.length}; after uploading ${currentSemester} twice and ${semesterOfDate(longStart)} once: ${registersAfter.join(", ")}; ${badSemesters.join("; ")}`);
+record("TC-159", "Attendance registers are kept once per semester", r.text.includes('"success":true') && registersBefore.length === 0 && registersAfter.length === 2 && new Set(registersAfter).size === 2 && badSemesters.every((x) => !x.includes("(no error)")), `registers before: ${registersBefore.length}; after uploading ${currentSemester} twice and ${semesterOfDate(longStart)} once: ${registersAfter.join(", ")}; ${badSemesters.join("; ")}`);
 
 const badFiles = [];
 for (const [label, file, type] of [
@@ -320,12 +325,12 @@ for (const [label, file, type] of [
   badFiles.push(`${label} -> "${errorOf(b.text)}"`);
 }
 const conductRows = docRows(newPlacementId, "code_of_conduct").length;
-record("TC-155", "Invalid or oversized documents are rejected", badFiles.every((x) => !x.includes("(no error)")) && conductRows === 0, badFiles.join("; ") + `; code of conduct rows saved: ${conductRows}`);
+record("TC-160", "Invalid or oversized documents are rejected", badFiles.every((x) => !x.includes("(no error)")) && conductRows === 0, badFiles.join("; ") + `; code of conduct rows saved: ${conductRows}`);
 
 r = await upload(newStudent, sihlePlacement, "commencement_letter", pdfFile("letter.pdf", fakePdf("letter")));
 const coordUpload = await upload(coord, sihlePlacement, "commencement_letter", pdfFile("letter.pdf", fakePdf("letter")));
 const sihleLetters = docRows(sihlePlacement, "commencement_letter").length;
-record("TC-156", "Documents can only be uploaded to the student's own placement", r.text.includes("Placement not found") && sihleLetters === 0 && !coordUpload.text.includes('"success":true'), `other student's placement -> "${errorOf(r.text)}"; coordinator upload accepted: ${coordUpload.text.includes('"success":true')}; letters on Sihle's placement: ${sihleLetters}`);
+record("TC-161", "Documents can only be uploaded to the student's own placement", r.text.includes("Placement not found") && sihleLetters === 0 && !coordUpload.text.includes('"success":true'), `other student's placement -> "${errorOf(r.text)}"; coordinator upload accepted: ${coordUpload.text.includes('"success":true')}; letters on Sihle's placement: ${sihleLetters}`);
 
 const mouId = mouRows[0].id;
 const ownerRes = await fetch(`${base}/api/documents/${mouId}`, { headers: { Cookie: newStudent } });
@@ -335,24 +340,24 @@ const docAnon = await get(`/api/documents/${mouId}`);
 const docCoord = await get(`/api/documents/${mouId}`, coord);
 const docLect = await get(`/api/documents/${mouId}`, lect);
 const docUnknown = await get("/api/documents/no-such-document", newStudent);
-record("TC-157", "Document download is limited to the owner and staff", ownerRes.status === 200 && ownerRes.headers.get("content-type") === "application/pdf" && ownerBody === "%PDF-" && docOther.status === 403 && docAnon.status === 401 && docCoord.status === 200 && docLect.status === 200 && docUnknown.status === 404, `owner ${ownerRes.status} (${ownerRes.headers.get("content-type")}); other student ${docOther.status}; signed out ${docAnon.status}; coordinator ${docCoord.status}; lecturer ${docLect.status}; unknown id ${docUnknown.status}`);
+record("TC-162", "Document download is limited to the owner and staff", ownerRes.status === 200 && ownerRes.headers.get("content-type") === "application/pdf" && ownerBody === "%PDF-" && docOther.status === 403 && docAnon.status === 401 && docCoord.status === 200 && docLect.status === 200 && docUnknown.status === 404, `owner ${ownerRes.status} (${ownerRes.headers.get("content-type")}); other student ${docOther.status}; signed out ${docAnon.status}; coordinator ${docCoord.status}; lecturer ${docLect.status}; unknown id ${docUnknown.status}`);
 
 const otherDelete = await args("deleteDocumentAction", [mouId], sihle);
 const stillThere = docRows(newPlacementId, "mou").length === 1;
 const ownDelete = await args("deleteDocumentAction", [mouId], newStudent);
 const removed = docRows(newPlacementId, "mou").length === 0 && !existsSync(path.join(documentsDir, secondStored));
-record("TC-158", "Students can remove their own documents only", otherDelete.text.includes("Document not found") && stillThere && ownDelete.text.includes('"success":true') && removed, `other student -> "${errorOf(otherDelete.text)}" (document kept: ${stillThere}); owner -> row and file removed: ${removed}`);
+record("TC-163", "Students can remove their own documents only", otherDelete.text.includes("Document not found") && stillThere && ownDelete.text.includes('"success":true') && removed, `other student -> "${errorOf(otherDelete.text)}" (document kept: ${stillThere}); owner -> row and file removed: ${removed}`);
 
 const dylanWil2 = await get("/student/placements/placement-dylan-2", dylan);
 const sihleDocs = await get(`/student/placements/${sihlePlacement}`, sihle);
 const overviewAgain = await get("/student", dylan);
 const pageShows = (page, text) => page.text.includes(text);
-record("TC-159", "Placement pages show each document as Uploaded or Missing", dylanWil2.status === 200 && pageShows(dylanWil2, "Memorandum of Understanding (MOU)") && pageShows(dylanWil2, "Attendance registers") && !pageShows(dylanWil2, "Missing") && pageShows(sihleDocs, "Missing") && pageShows(sihleDocs, "Uploaded") && (overviewAgain.text.includes("documents <!-- -->3<!-- --> of<!-- --> <!-- -->3") || overviewAgain.text.includes("documents 3 of 3")), `Dylan WIL 2 complete (no Missing): ${!pageShows(dylanWil2, "Missing")}; Sihle shows Uploaded and Missing: ${pageShows(sihleDocs, "Uploaded") && pageShows(sihleDocs, "Missing")}; placement card shows documents 3 of 3: ${overviewAgain.text.includes("documents <!-- -->3<!-- --> of<!-- --> <!-- -->3") || overviewAgain.text.includes("documents 3 of 3")}`);
+record("TC-164", "Placement pages show each document as Uploaded or Missing", dylanWil2.status === 200 && pageShows(dylanWil2, "Memorandum of Understanding (MOU)") && pageShows(dylanWil2, "Attendance registers") && !pageShows(dylanWil2, "Missing") && pageShows(sihleDocs, "Missing") && pageShows(sihleDocs, "Uploaded") && (overviewAgain.text.includes("documents <!-- -->3<!-- --> of<!-- --> <!-- -->3") || overviewAgain.text.includes("documents 3 of 3")), `Dylan WIL 2 complete (no Missing): ${!pageShows(dylanWil2, "Missing")}; Sihle shows Uploaded and Missing: ${pageShows(sihleDocs, "Uploaded") && pageShows(sihleDocs, "Missing")}; placement card shows documents 3 of 3: ${overviewAgain.text.includes("documents <!-- -->3<!-- --> of<!-- --> <!-- -->3") || overviewAgain.text.includes("documents 3 of 3")}`);
 
 const bigPdf = fakePdf("large scan", 9.5 * 1024 * 1024);
 r = await upload(newStudent, newPlacementId, "code_of_conduct", pdfFile("Scanned code of conduct.pdf", bigPdf));
 const bigRow = docRows(newPlacementId, "code_of_conduct")[0];
-record("TC-160", "A 9.5 MB scanned document uploads through the student page", r.text.includes('"success":true') && bigRow?.file_size === bigPdf.length && statSync(path.join(documentsDir, bigRow.stored_file_name)).size === bigPdf.length, `response: ${r.text.includes('"success":true') ? "success" : errorOf(r.text) + " (status " + r.status + ")"}; stored size ${bigRow?.file_size ?? "none"} of ${bigPdf.length} bytes`);
+record("TC-165", "A 9.5 MB scanned document uploads through the student page", r.text.includes('"success":true') && bigRow?.file_size === bigPdf.length && statSync(path.join(documentsDir, bigRow.stored_file_name)).size === bigPdf.length, `response: ${r.text.includes('"success":true') ? "success" : errorOf(r.text) + " (status " + r.status + ")"}; stored size ${bigRow?.file_size ?? "none"} of ${bigPdf.length} bytes`);
 
 // ---------------------------------------------------------------- FR-18 WIL completion
 const today = new Date().toISOString().slice(0, 10);
@@ -367,7 +372,7 @@ const afterApproval = await get(`/student/placements/${quickId}`, newStudent);
 const dashNow = await get("/coordinator", coord);
 const statusIn = (html, name) => { const i = html.indexOf(name); const rowHtml = html.slice(i, html.indexOf("</tr>", i)); return ["On track", "Awaiting verification", "Overdue", "WIL completed", "No placement"].find((x) => rowHtml.includes(x)); };
 const dylanProfile = await get("/coordinator/students/student-1", coord);
-record("TC-167", "A placement is completed automatically when its verified hours reach the required hours", !beforeApproval.text.includes("WIL completed") && afterApproval.text.includes("WIL completed") && !afterApproval.text.includes("New entry") && statusIn(dashNow.text, "Lerato Mokoena") === "WIL completed" && dylanProfile.text.includes("WIL completed"), `4-hour placement before approval completed: ${beforeApproval.text.includes("WIL completed")}; after approval: ${afterApproval.text.includes("WIL completed")} (New entry button hidden: ${!afterApproval.text.includes("New entry")}); Lerato on dashboard: ${statusIn(dashNow.text, "Lerato Mokoena")}; Dylan's profile marks WIL 1 completed: ${dylanProfile.text.includes("WIL completed")}`);
+record("TC-172", "A placement is completed automatically when its verified hours reach the required hours", !beforeApproval.text.includes("WIL completed") && afterApproval.text.includes("WIL completed") && !afterApproval.text.includes("New entry") && statusIn(dashNow.text, "Lerato Mokoena") === "WIL completed" && dylanProfile.text.includes("WIL completed"), `4-hour placement before approval completed: ${beforeApproval.text.includes("WIL completed")}; after approval: ${afterApproval.text.includes("WIL completed")} (New entry button hidden: ${!afterApproval.text.includes("New entry")}); Lerato on dashboard: ${statusIn(dashNow.text, "Lerato Mokoena")}; Dylan's profile marks WIL 1 completed: ${dylanProfile.text.includes("WIL completed")}`);
 
 const locked = [
   ["new entry", await form("createLogbookEntryAction", { placementId: quickId, workDate: today, description: "Too late.", hours: "1", mentorEmail: "m@host.co.za" }, newStudent)],
@@ -378,14 +383,14 @@ const locked = [
 ].map(([label, res]) => `${label} -> "${errorOf(res.text)}"`);
 const quickEntries = db.prepare("SELECT COUNT(*) c FROM logbook_entries WHERE placement_id = ?").get(quickId).c;
 const dylanMouKept = !!db.prepare("SELECT 1 FROM placement_documents WHERE id = 'document-5'").get();
-record("TC-168", "A completed placement is locked against entries, submissions, documents and edits", locked.every((x) => x.includes("completed and locked")) && quickEntries === 2 && entryRow(draftLeft).status === "draft" && placementRow(quickId).required_hours === 4 && dylanMouKept, locked.join("; ") + `; entries still ${quickEntries}; draft still ${entryRow(draftLeft).status}; required hours still ${placementRow(quickId).required_hours}; Dylan's MOU kept: ${dylanMouKept}`);
+record("TC-173", "A completed placement is locked against entries, submissions, documents and edits", locked.every((x) => x.includes("completed and locked")) && quickEntries === 2 && entryRow(draftLeft).status === "draft" && placementRow(quickId).required_hours === 4 && dylanMouKept, locked.join("; ") + `; entries still ${quickEntries}; draft still ${entryRow(draftLeft).status}; required hours still ${placementRow(quickId).required_hours}; Dylan's MOU kept: ${dylanMouKept}`);
 
 const freshEmail = `${year}0198@ctucareer.co.za`;
 const fresh = session((await form("signupAction", { fullName: "Fresh Student", email: freshEmail, password: "Strong#Pass1" }, "", {}, "/signup")).setCookie);
 const freshBefore = statusIn((await get("/coordinator", coord)).text, "Fresh Student");
 await form("createPlacementAction", { title: "WIL 1", companyName: "Brand New Host", requiredHours: "200", startDate: today }, fresh);
 const freshAfter = statusIn((await get("/coordinator", coord)).text, "Fresh Student");
-record("TC-169", "A student without a placement shows No placement; a new placement is not overdue", freshBefore === "No placement" && freshAfter === "On track", `before adding a placement: ${freshBefore}; after adding one that starts today: ${freshAfter}`);
+record("TC-174", "A student without a placement shows No placement; a new placement is not overdue", freshBefore === "No placement" && freshAfter === "On track", `before adding a placement: ${freshBefore}; after adding one that starts today: ${freshAfter}`);
 
 // ---------------------------------------------------------------- FR-12 timestamps
 const t = db.prepare("SELECT created_at, updated_at, verified_at FROM logbook_entries WHERE id=?").get(draftId);
