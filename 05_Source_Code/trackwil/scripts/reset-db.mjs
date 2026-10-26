@@ -25,6 +25,7 @@ const counts = database
   .prepare(
     `SELECT
       (SELECT COUNT(*) FROM users) AS users,
+      (SELECT COUNT(*) FROM wil_placements) AS placements,
       (SELECT COUNT(*) FROM logbook_entries) AS entries,
       (SELECT COUNT(*) FROM verification_tokens) AS tokens`,
   )
@@ -32,5 +33,5 @@ const counts = database
 database.close();
 
 console.log(
-  `Database reset: ${counts.users} users, ${counts.entries} logbook entries, ${counts.tokens} verification tokens.`,
+  `Database reset: ${counts.users} users, ${counts.placements} WIL placements, ${counts.entries} logbook entries, ${counts.tokens} verification tokens.`,
 );

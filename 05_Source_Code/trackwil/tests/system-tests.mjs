@@ -1,4 +1,4 @@
-// TrackWIL system test suite: runs every automated test case (TC-110 to TC-144) against a running
+// TrackWIL system test suite: runs every automated test case (TC-110 to TC-150) against a running
 // server and the SQLite database, and prints one line per test with the actual result.
 // Usage: npm run build && npm start, then in another terminal: npm run test:system
 // The tests add entries to the database; run npm run db:reset afterwards to restore the demo data.
@@ -52,6 +52,7 @@ const errorOf = (text) => (text.match(/"error":"([^"]*)"/) ?? [])[1] ?? "(no err
 const blocked = (r, marker) => (r.status >= 300 && r.status < 400) || !r.text.includes(marker) || r.text.includes("NEXT_REDIRECT");
 const entryRow = (id) => db.prepare("SELECT * FROM logbook_entries WHERE id = ?").get(id);
 async function login(email, password) { return session((await form("loginAction", { email, password })).setCookie); }
+const sihlePlacement = "placement-sihle-1";
 
 // ---------------------------------------------------------------- FR-01 sign-in
 let r = await form("loginAction", { email: "STUDENT2@ctucareer.co.za", password: "student123" });
@@ -89,7 +90,7 @@ r = await get("/student");
 const rc = await get("/coordinator");
 record("TC-117", "Signed-out visitor is redirected from /student and /coordinator", r.status === 307 && rc.status === 307, `/student -> ${r.status} ${r.location}; /coordinator -> ${rc.status} ${rc.location}`);
 r = await get("/student", coord);
-record("TC-118", "Coordinator cannot open the student area", blocked(r, "My logbook"), `status ${r.status}; redirected to /coordinator: ${r.text.includes("NEXT_REDIRECT;replace;/coordinator") || r.location.includes("/coordinator")}`);
+record("TC-118", "Coordinator cannot open the student area", blocked(r, "My WIL placements"), `status ${r.status}; redirected to /coordinator: ${r.text.includes("NEXT_REDIRECT;replace;/coordinator") || r.location.includes("/coordinator")}`);
 r = await get("/coordinator", sihle);
 record("TC-119", "Student cannot open the coordinator dashboard", blocked(r, "Coordinator dashboard"), `status ${r.status}; redirected to /student: ${r.text.includes("NEXT_REDIRECT;replace;/student") || r.location.includes("/student")}`);
 r = await get("/student/entries/entry-1", sihle);
@@ -99,22 +100,54 @@ const sig = sihle.split(".").pop();
 const tampered = await get("/coordinator", `trackwil_session=coordinator-1.${sig}`);
 record("TC-121", "Forged or tampered session cookie is rejected (DEF-01 retest)", blocked(forged, "Coordinator dashboard") && blocked(tampered, "Coordinator dashboard"), `unsigned 'coordinator-1' -> dashboard shown: ${forged.text.includes("Coordinator dashboard") && !forged.text.includes("NEXT_REDIRECT")}; another user's signature -> dashboard shown: ${tampered.text.includes("Coordinator dashboard") && !tampered.text.includes("NEXT_REDIRECT")}`);
 
+// ---------------------------------------------------------------- FR-15 WIL placements
+const placementRow = (id) => db.prepare("SELECT * FROM wil_placements WHERE id = ?").get(id);
+r = await form("createPlacementAction", { title: "WIL 1", companyName: "Test Host Company", requiredHours: "320", startDate: "2026-10-01" }, newStudent);
+const newPlacementId = r.redirect.split("/student/placements/")[1];
+const np = newPlacementId ? placementRow(newPlacementId) : null;
+const newStudentId = db.prepare("SELECT id FROM users WHERE email=?").get(newEmail).id;
+record("TC-145", "Student adds a WIL placement with its own required hours", !!np && np.required_hours === 320 && np.student_id === newStudentId, `redirect=${r.redirect}; title=${np?.title}; company=${np?.company_name}; required hours=${np?.required_hours}`);
+const badPlacements = [];
+for (const [fields, label] of [
+  [{ title: "WIL 2", companyName: "Host", requiredHours: "0", startDate: "2026-10-01" }, "0 hours"],
+  [{ title: "WIL 2", companyName: "Host", requiredHours: "-10", startDate: "2026-10-01" }, "-10 hours"],
+  [{ title: "WIL 2", companyName: "Host", requiredHours: "6000", startDate: "2026-10-01" }, "6000 hours"],
+  [{ title: "", companyName: "Host", requiredHours: "100", startDate: "2026-10-01" }, "no title"],
+  [{ title: "WIL 2", companyName: "", requiredHours: "100", startDate: "2026-10-01" }, "no company"],
+  [{ title: "WIL 2", companyName: "Host", requiredHours: "100", startDate: "" }, "no start date"],
+]) {
+  const b = await form("createPlacementAction", fields, newStudent);
+  badPlacements.push(`${label} -> "${errorOf(b.text)}"`);
+}
+const extraPlacements = db.prepare("SELECT COUNT(*) c FROM wil_placements WHERE student_id = ? AND id <> ?").get(newStudentId, newPlacementId ?? "").c;
+record("TC-146", "Invalid placement details are rejected", badPlacements.every((x) => !x.includes("(no error)")) && extraPlacements === 0, badPlacements.join("; ") + `; extra placements saved: ${extraPlacements}`);
+await form("updatePlacementAction", { placementId: newPlacementId, title: "WIL 1", companyName: "Test Host Company", requiredHours: "300", startDate: "2026-10-01" }, newStudent);
+const editedHours = placementRow(newPlacementId)?.required_hours;
+const otherEdit = await form("updatePlacementAction", { placementId: sihlePlacement, title: "Taken over", companyName: "X", requiredHours: "1", startDate: "2026-10-01" }, newStudent);
+record("TC-147", "Student can edit their own placement but not another student's", editedHours === 300 && otherEdit.text.includes("Placement not found") && placementRow(sihlePlacement).required_hours === 200, `own placement now ${editedHours} hours; editing Sihle's placement -> "${errorOf(otherEdit.text)}"; Sihle's hours still ${placementRow(sihlePlacement).required_hours}`);
+r = await form("createLogbookEntryAction", { placementId: sihlePlacement, workDate: "2026-10-22", description: "Entry on another student's placement.", hours: "2", mentorEmail: "m@host.co.za" }, newStudent);
+const r4 = await form("createLogbookEntryAction", { placementId: "no-such-placement", workDate: "2026-10-22", description: "Entry without a placement.", hours: "2", mentorEmail: "m@host.co.za" }, newStudent);
+record("TC-148", "Entries can only be added to the student's own placement", r.text.includes("Choose one of your WIL placements") && r4.text.includes("Choose one of your WIL placements"), `Sihle's placement -> "${errorOf(r.text)}"; unknown placement -> "${errorOf(r4.text)}"`);
+r = await get(`/student/placements/${sihlePlacement}`, newStudent);
+const r5 = await get(`/student/placements/${newPlacementId}`, newStudent);
+record("TC-149", "Student cannot open another student's placement", !r.text.includes("Table Bay Engineering") && r5.text.includes("Test Host Company"), `Sihle's placement shown: ${r.text.includes("Table Bay Engineering")}; own placement shown: ${r5.text.includes("Test Host Company")}`);
+
 // ---------------------------------------------------------------- FR-04 / FR-05 entries and evidence
-r = await form("createLogbookEntryAction", { workDate: "2026-10-22", description: "Test entry: updated the asset register.", hours: "4.5", mentorEmail: "mentor@host.co.za" }, sihle);
+r = await form("createLogbookEntryAction", { placementId: sihlePlacement, workDate: "2026-10-22", description: "Test entry: updated the asset register.", hours: "4.5", mentorEmail: "mentor@host.co.za" }, sihle);
 const draftId = r.redirect.split("/student/entries/")[1];
 record("TC-122", "Valid entry is saved as Draft", !!draftId && entryRow(draftId)?.status === "draft", `redirect=${r.redirect}; status=${entryRow(draftId)?.status}; hours=${entryRow(draftId)?.hours}`);
 const bad = [];
 for (const [hours, desc] of [["30", "x"], ["0", "x"], ["-2", "x"], ["5", ""]]) {
-  const b = await form("createLogbookEntryAction", { workDate: "2026-10-22", description: desc, hours, mentorEmail: "m@host.co.za" }, sihle);
+  const b = await form("createLogbookEntryAction", { placementId: sihlePlacement, workDate: "2026-10-22", description: desc, hours, mentorEmail: "m@host.co.za" }, sihle);
   bad.push(`hours=${hours} desc=${desc ? "yes" : "empty"} -> "${errorOf(b.text)}"`);
 }
 record("TC-123", "Invalid hours (30, 0, -2) and empty description are rejected", bad.every((x) => !x.includes("(no error)")), bad.join("; "));
 const png = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==", "base64");
-r = await form("createLogbookEntryAction", { workDate: "2026-10-21", description: "Test entry with evidence: photographed the completed installation.", hours: "6", mentorEmail: "mentor@host.co.za" }, sihle, { evidence: { blob: new Blob([png], { type: "image/png" }), name: "photo.png" } });
+r = await form("createLogbookEntryAction", { placementId: sihlePlacement, workDate: "2026-10-21", description: "Test entry with evidence: photographed the completed installation.", hours: "6", mentorEmail: "mentor@host.co.za" }, sihle, { evidence: { blob: new Blob([png], { type: "image/png" }), name: "photo.png" } });
 const evId = r.redirect.split("/student/entries/")[1];
 const evName = entryRow(evId)?.evidence_file_name;
 record("TC-124", "PNG evidence is accepted and stored under a random name", !!evName && /^[0-9a-f-]{36}\.png$/.test(evName), `stored as ${evName}`);
-r = await form("createLogbookEntryAction", { workDate: "2026-10-21", description: "x", hours: "2", mentorEmail: "m@host.co.za" }, sihle, { evidence: { blob: new Blob(["MZ"], { type: "application/octet-stream" }), name: "virus.exe" } });
+r = await form("createLogbookEntryAction", { placementId: sihlePlacement, workDate: "2026-10-21", description: "x", hours: "2", mentorEmail: "m@host.co.za" }, sihle, { evidence: { blob: new Blob(["MZ"], { type: "application/octet-stream" }), name: "virus.exe" } });
 record("TC-125", "Non-PDF/image evidence (.exe) is rejected", r.text.includes("Evidence must be a PDF or image"), `message="${errorOf(r.text)}"`);
 const owner = await get(`/api/evidence/${evName}`, sihle);
 const other = await get(`/api/evidence/${evName}`, await login("student1@ctucareer.co.za", "student123"));
@@ -124,7 +157,7 @@ const trav = await get(`/api/evidence/..%2F..%2Fdata%2Ftrackwil.db`, sihle);
 record("TC-126", "Evidence download is limited to the owner and staff", owner.status === 200 && other.status === 403 && anon.status === 401 && staff.status === 200 && trav.status === 404, `owner ${owner.status}; other student ${other.status}; signed out ${anon.status}; coordinator ${staff.status}; path traversal attempt ${trav.status}`);
 
 // ---------------------------------------------------------------- FR-06 submit for verification
-const noMentor = await form("createLogbookEntryAction", { workDate: "2026-10-20", description: "Entry without a mentor email.", hours: "3", mentorEmail: "" }, sihle);
+const noMentor = await form("createLogbookEntryAction", { placementId: sihlePlacement, workDate: "2026-10-20", description: "Entry without a mentor email.", hours: "3", mentorEmail: "" }, sihle);
 const noMentorId = noMentor.redirect.split("/student/entries/")[1];
 r = await args("submitEntryForVerificationAction", [noMentorId], sihle);
 record("TC-128", "Entry without a mentor email cannot be submitted", r.text.includes("Add a mentor email"), `message="${errorOf(r.text)}"`);
@@ -155,7 +188,7 @@ r = await args("mentorDecisionAction", [expiredToken, "approved"]);
 const expPage = await get(`/verify/${expiredToken}`);
 record("TC-135", "An expired link is refused and the entry is unchanged", r.text.includes("expired") && entryRow("entry-7").status === "pending_verification" && expPage.text.includes("expired"), `action -> "${errorOf(r.text)}"; page mentions expiry: ${expPage.text.includes("expired")}; status ${entryRow("entry-7").status}`);
 // Reject then resubmit
-const rj = await form("createLogbookEntryAction", { workDate: "2026-10-19", description: "Test entry to be rejected.", hours: "2", mentorEmail: "mentor@host.co.za" }, sihle);
+const rj = await form("createLogbookEntryAction", { placementId: sihlePlacement, workDate: "2026-10-19", description: "Test entry to be rejected.", hours: "2", mentorEmail: "mentor@host.co.za" }, sihle);
 const rjId = rj.redirect.split("/student/entries/")[1];
 const rjTok = (await args("submitEntryForVerificationAction", [rjId], sihle)).text.match(/"token":"([0-9a-f]+)"/)[1];
 await args("mentorDecisionAction", [rjTok, "rejected"]);
@@ -174,7 +207,7 @@ let def02Actual;
 let def02Pass = false;
 {
   const s = newStudent;
-  const e = await form("createLogbookEntryAction", { workDate: "2026-10-12", description: "Entry whose link will expire.", hours: "3", mentorEmail: "mentor@host.co.za" }, s);
+  const e = await form("createLogbookEntryAction", { placementId: newPlacementId, workDate: "2026-10-12", description: "Entry whose link will expire.", hours: "3", mentorEmail: "mentor@host.co.za" }, s);
   const eid = e.redirect.split("/student/entries/")[1];
   const t1 = (await args("submitEntryForVerificationAction", [eid], s)).text.match(/"token":"([0-9a-f]+)"/)[1];
   const w = new DatabaseSync(path.join(appDir, "data/trackwil.db"));
@@ -189,14 +222,24 @@ let def02Pass = false;
 record("TC-137", "Pending entry whose link expired can be resubmitted (DEF-02 retest)", def02Pass, def02Actual);
 
 // ---------------------------------------------------------------- FR-09 / FR-10 / FR-11 views
-r = await get("/student", sihle);
-const verifiedHours = db.prepare("SELECT COALESCE(SUM(hours),0) h FROM logbook_entries WHERE student_id='student-2' AND status='verified'").get().h;
-record("TC-138", "Logbook lists statuses and verified hours against required hours", r.text.includes(`${verifiedHours}<!-- --> of <!-- -->200`) || r.text.includes(`${verifiedHours} of 200`), `expected "${verifiedHours} of 200 verified hours"; statuses shown: ${["Draft", "Pending verification", "Verified", "Rejected"].filter((s) => r.text.includes(s)).join(", ")}`);
+r = await get(`/student/placements/${sihlePlacement}`, sihle);
+const verifiedHours = db.prepare("SELECT COALESCE(SUM(hours),0) h FROM logbook_entries WHERE placement_id=? AND status='verified'").get(sihlePlacement).h;
+record("TC-138", "Placement logbook lists statuses and verified hours against its required hours", r.text.includes(`${verifiedHours}<!-- --> of <!-- -->200`) || r.text.includes(`${verifiedHours} of 200`), `expected "${verifiedHours} of 200 verified hours"; statuses shown: ${["Draft", "Pending verification", "Verified", "Rejected"].filter((s) => r.text.includes(s)).join(", ")}`);
 r = await get("/coordinator", lect);
 // Each student's row runs from their name to the closing </tr> of that row.
 const rowFor = (name) => { const i = r.text.indexOf(name); return r.text.slice(i, r.text.indexOf("</tr>", i)); };
 const statusOf = (name) => ["On track", "Awaiting verification", "Overdue"].find((s) => rowFor(name).includes(s));
 record("TC-139", "Dashboard shows each student's status, hours and pending count", statusOf("Dylan Shepard") === "On track" && statusOf("Moe Green") === "Overdue" && statusOf("Sihle Kayise") === "Awaiting verification", `Dylan=${statusOf("Dylan Shepard")}; Moe=${statusOf("Moe Green")}; Sihle=${statusOf("Sihle Kayise")}; Gedion=${statusOf("Gedion Basson")}`);
+
+const dylan = await login("student1@ctucareer.co.za", "student123");
+const overview = await get("/student", dylan);
+const perPlacement = ["placement-dylan-1", "placement-dylan-2"].map((id) => {
+  const pl = placementRow(id);
+  const h = db.prepare("SELECT COALESCE(SUM(hours),0) h FROM logbook_entries WHERE placement_id=? AND status='verified'").get(id).h;
+  const shown = overview.text.includes(`${h}<!-- --> of <!-- -->${pl.required_hours}`) || overview.text.includes(`${h} of ${pl.required_hours}`);
+  return { label: `${pl.title} ${h} of ${pl.required_hours}`, shown };
+});
+record("TC-150", "Verified hours are counted separately for each placement", perPlacement.every((x) => x.shown), perPlacement.map((x) => `${x.label} shown: ${x.shown}`).join("; "));
 
 // ---------------------------------------------------------------- FR-12 timestamps
 const t = db.prepare("SELECT created_at, updated_at, verified_at FROM logbook_entries WHERE id=?").get(draftId);
@@ -216,21 +259,23 @@ const hash = db.prepare("SELECT password_hash FROM users WHERE email=?").get(new
 record("TC-142", "Passwords are stored only as salted scrypt hashes", /^[0-9a-f]{32}:[0-9a-f]{128}$/.test(hash) && !hash.includes("Strong#Pass1"), `stored value format: <32 hex salt>:<128 hex key>; plain password present: ${hash.includes("Strong#Pass1")}`);
 const w = new DatabaseSync(":memory:");
 w.exec("PRAGMA foreign_keys = ON;" + readFileSync(path.join(appDir, "database/schema.sql"), "utf8"));
-w.exec("INSERT INTO users VALUES ('u1','A','a@x.co','student','h',200)");
+w.exec("INSERT INTO users VALUES ('u1','A','a@x.co','student','h'); INSERT INTO wil_placements VALUES ('p1','u1','WIL 1','Host',200,'2026-10-01','t','t')");
 const attempts = [
-  ["hours = 30", "INSERT INTO logbook_entries VALUES ('e1','u1','2026-10-01','d',30,NULL,'draft',NULL,'t','t',NULL)"],
-  ["unknown status", "INSERT INTO logbook_entries VALUES ('e2','u1','2026-10-01','d',5,NULL,'approved',NULL,'t','t',NULL)"],
-  ["entry for missing student", "INSERT INTO logbook_entries VALUES ('e3','nobody','2026-10-01','d',5,NULL,'draft',NULL,'t','t',NULL)"],
-  ["unknown role", "INSERT INTO users VALUES ('u2','B','b@x.co','admin','h',0)"],
-  ["duplicate email (case)", "INSERT INTO users VALUES ('u3','C','A@X.CO','student','h',0)"],
-  ["token used without decision", "INSERT INTO logbook_entries VALUES ('e4','u1','2026-10-01','d',5,NULL,'draft',NULL,'t','t',NULL); INSERT INTO verification_tokens VALUES ('k','e4','t','used',NULL)"],
+  ["hours = 30", "INSERT INTO logbook_entries VALUES ('e1','p1','2026-10-01','d',30,NULL,'draft',NULL,'t','t',NULL)"],
+  ["unknown status", "INSERT INTO logbook_entries VALUES ('e2','p1','2026-10-01','d',5,NULL,'approved',NULL,'t','t',NULL)"],
+  ["entry for missing placement", "INSERT INTO logbook_entries VALUES ('e3','nobody','2026-10-01','d',5,NULL,'draft',NULL,'t','t',NULL)"],
+  ["placement with 0 required hours", "INSERT INTO wil_placements VALUES ('p2','u1','WIL 2','Host',0,'2026-10-01','t','t')"],
+  ["placement for missing student", "INSERT INTO wil_placements VALUES ('p3','nobody','WIL 1','Host',200,'2026-10-01','t','t')"],
+  ["unknown role", "INSERT INTO users VALUES ('u2','B','b@x.co','admin','h')"],
+  ["duplicate email (case)", "INSERT INTO users VALUES ('u3','C','A@X.CO','student','h')"],
+  ["token used without decision", "INSERT INTO logbook_entries VALUES ('e4','p1','2026-10-01','d',5,NULL,'draft',NULL,'t','t',NULL); INSERT INTO verification_tokens VALUES ('k','e4','t','used',NULL)"],
 ];
 const out = attempts.map(([label, sql]) => { try { w.exec(sql); return `${label}: ACCEPTED`; } catch (e) { return `${label}: rejected (${e.message.split(":")[0]})`; } });
 record("TC-143", "Database constraints reject invalid data", out.every((o) => o.includes("rejected")), out.join("; "));
 
 // ---------------------------------------------------------------- NFR-02 performance
 const s2 = await login("student2@ctucareer.co.za", "student123");
-const pages = [["/", ""], ["/student", s2], ["/student/entries/new", s2], ["/coordinator", coord], [`/verify/c3d5e7f9a1b3c5d7e9f1a3b5c7d9e1f3a5b7c9d1e3f5a7b9`, ""]];
+const pages = [["/", ""], ["/student", s2], [`/student/placements/${sihlePlacement}`, s2], ["/student/entries/new", s2], ["/coordinator", coord], [`/verify/c3d5e7f9a1b3c5d7e9f1a3b5c7d9e1f3a5b7c9d1e3f5a7b9`, ""]];
 const perf = [];
 let worst = 0;
 for (const [p, c] of pages) {
@@ -239,10 +284,10 @@ for (const [p, c] of pages) {
   const avg = times.reduce((a, b) => a + b, 0) / times.length;
   const max = Math.max(...times);
   worst = Math.max(worst, max);
-  perf.push(`${p.length > 20 ? "/verify/<token>" : p} avg ${avg.toFixed(0)} ms, max ${max.toFixed(0)} ms`);
+  perf.push(`${p.startsWith("/verify/") ? "/verify/<token>" : p} avg ${avg.toFixed(0)} ms, max ${max.toFixed(0)} ms`);
 }
 const t0 = performance.now();
-const pf = await form("createLogbookEntryAction", { workDate: "2026-10-18", description: "Timing test entry.", hours: "1", mentorEmail: "m@host.co.za" }, s2);
+const pf = await form("createLogbookEntryAction", { placementId: sihlePlacement, workDate: "2026-10-18", description: "Timing test entry.", hours: "1", mentorEmail: "m@host.co.za" }, s2);
 const createMs = performance.now() - t0;
 record("TC-144", "Pages and actions respond within 2 seconds (10 requests each)", worst < 2000 && createMs < 2000 && !!pf.redirect, perf.join("; ") + `; create entry ${createMs.toFixed(0)} ms`);
 

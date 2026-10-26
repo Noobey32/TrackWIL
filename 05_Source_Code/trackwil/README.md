@@ -1,6 +1,6 @@
 # TrackWIL (Next.js)
 
-Capstone MVP for WIL logbook tracking: students log hours, mentors verify via a link (no account), coordinators see status at a glance.
+Capstone MVP for WIL logbook tracking: students add their WIL placements and log hours against each one, mentors verify via a link (no account), coordinators see status at a glance.
 
 ## Setup
 
@@ -27,7 +27,7 @@ Sessions are signed with a secret from `TRACKWIL_SESSION_SECRET`, or a random se
 
 ## Demo flow
 
-1. Sign in as **student1@ctucareer.co.za** and create a logbook entry (optionally upload evidence).
+1. Sign in as **student1@ctucareer.co.za**. Dylan has two WIL placements (WIL 1 and WIL 2), each with its own required hours. Open **WIL 2** and create a logbook entry (optionally upload evidence), or add a new placement with **Add WIL placement**.
 2. Open the entry and **Submit for verification**, then copy the mentor link.
 3. Open the link in a private window (no login) and approve or reject.
    A ready-made open link for Sihle's pending entry is also seeded:
@@ -38,12 +38,12 @@ Sessions are signed with a secret from `TRACKWIL_SESSION_SECRET`, or a random se
 
 TrackWIL uses SQLite through Node's built-in `node:sqlite` module, so there is no database server to install.
 
-- `database/schema.sql`: tables `users`, `logbook_entries`, `verification_tokens` with primary keys, foreign keys and CHECK constraints
+- `database/schema.sql`: tables `users`, `wil_placements`, `logbook_entries`, `verification_tokens` with primary keys, foreign keys and CHECK constraints. Each entry belongs to a placement, and each placement to a student with its own required hours
 - `database/seed.sql`: synthetic demo data (dates are relative to today, so the coordinator dashboard always shows On track, Awaiting verification and Overdue students)
 - `data/trackwil.db`: the database file, created and seeded automatically on first use (ignored by git)
 - `data/uploads/`: evidence files (ignored by git except `.gitkeep`)
 
-To start again from the seed data, stop the dev server and run:
+To start again from the seed data, stop the dev server and run the command below. Run it once after pulling a version that changes `database/schema.sql` (for example the change that added WIL placements); the app stops with a message asking for this if the database file is out of date.
 
 ```bash
 npm run db:reset
@@ -53,7 +53,7 @@ The `data/*.json` files are the original prototype storage from the first sprint
 
 ## Testing
 
-The system test suite (TC-110 to TC-144 in the Test Cases workbook) runs against a running app and the database:
+The system test suite (TC-110 to TC-150 in the Test Cases workbook) runs against a running app and the database:
 
 ```bash
 npm run build
@@ -67,7 +67,7 @@ npm run db:reset                  # afterwards: the tests add entries to the dat
 - `database/`: SQL schema and seed scripts
 - `scripts/reset-db.mjs`: rebuilds the database from those scripts
 - `src/lib/`: types, SQLite connection (`db.ts`), repository, auth session, metrics
-- `src/app/actions/`: server actions (login, logbook, mentor verify)
+- `src/app/actions/`: server actions (login, WIL placements, logbook, mentor verify)
 - `src/app/student/`: student dashboard and entries
 - `src/app/coordinator/`: coordinator dashboard
 - `src/app/verify/[token]/`: public mentor verification page

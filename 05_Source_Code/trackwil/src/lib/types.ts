@@ -15,11 +15,24 @@ export type User = {
 	email: string;
 	role: UserRole;
 	passwordHash: string;
+};
+
+/** One WIL placement; a student can have several, each with its own required hours. */
+export type WilPlacement = {
+	id: string;
+	studentId: string;
+	title: string;
+	companyName: string;
 	requiredHours: number;
+	startDate: string;
+	createdAt: string;
+	updatedAt: string;
 };
 
 export type LogbookEntry = {
 	id: string;
+	placementId: string;
+	/** Read through the entry's placement; not stored on the entry itself. */
 	studentId: string;
 	workDate: string;
 	description: string;

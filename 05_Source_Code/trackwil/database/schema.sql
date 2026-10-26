@@ -2,10 +2,15 @@
 -- Project: TrackWIL - Work-Integrated Learning logbook tracking
 -- Group: Group 3 (SPM622)
 --
--- Three tables in third normal form:
+-- Four tables in third normal form:
 --   users                 one row per account (student, coordinator, lecturer)
---   logbook_entries       one row per day of WIL work; belongs to one student
+--   wil_placements        one row per WIL placement; belongs to one student and
+--                         holds the hours that placement requires
+--   logbook_entries       one row per day of WIL work; belongs to one placement
 --   verification_tokens   one-time mentor links; each belongs to one entry
+--
+-- A student can complete several WIL placements, so an entry is linked to its
+-- placement and reaches the student through it (no student_id on the entry).
 --
 -- Mentors do not have accounts. They verify through a token link, so the
 -- mentor is recorded only as an email address on the entry.
@@ -20,13 +25,26 @@ CREATE TABLE IF NOT EXISTS users (
     full_name       TEXT    NOT NULL,
     email           TEXT    NOT NULL UNIQUE COLLATE NOCASE,
     role            TEXT    NOT NULL CHECK (role IN ('student', 'coordinator', 'lecturer')),
-    password_hash   TEXT    NOT NULL,
-    required_hours  REAL    NOT NULL DEFAULT 0 CHECK (required_hours >= 0)
+    password_hash   TEXT    NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS wil_placements (
+    id              TEXT    PRIMARY KEY,
+    student_id      TEXT    NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+    title           TEXT    NOT NULL,
+    company_name    TEXT    NOT NULL,
+    required_hours  REAL    NOT NULL CHECK (required_hours > 0 AND required_hours <= 5000),
+    start_date      TEXT    NOT NULL,
+    created_at      TEXT    NOT NULL,
+    updated_at      TEXT    NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_wil_placements_student
+    ON wil_placements (student_id, start_date DESC);
 
 CREATE TABLE IF NOT EXISTS logbook_entries (
     id                  TEXT    PRIMARY KEY,
-    student_id          TEXT    NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+    placement_id        TEXT    NOT NULL REFERENCES wil_placements (id) ON DELETE CASCADE,
     work_date           TEXT    NOT NULL,
     description         TEXT    NOT NULL,
     hours               REAL    NOT NULL CHECK (hours > 0 AND hours <= 24),
@@ -39,8 +57,8 @@ CREATE TABLE IF NOT EXISTS logbook_entries (
     verified_at         TEXT
 );
 
-CREATE INDEX IF NOT EXISTS idx_logbook_entries_student
-    ON logbook_entries (student_id, work_date DESC);
+CREATE INDEX IF NOT EXISTS idx_logbook_entries_placement
+    ON logbook_entries (placement_id, work_date DESC);
 
 CREATE TABLE IF NOT EXISTS verification_tokens (
     token       TEXT    PRIMARY KEY,

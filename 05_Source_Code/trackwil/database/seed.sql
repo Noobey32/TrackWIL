@@ -5,57 +5,82 @@
 -- Demo passwords: students student123, coordinator coord123, lecturer lecturer123.
 -- Students who signed up through the app use their own passwords.
 
-INSERT INTO users (id, full_name, email, role, password_hash, required_hours) VALUES
+INSERT INTO users (id, full_name, email, role, password_hash) VALUES
     ('student-1', 'Dylan Shepard', 'student1@ctucareer.co.za', 'student',
-     '1d8a1fa74a0cf655ef89fad7215d8670:20ab83bd1e50567dad529be32cded9996024cba9622847fe0bac013607a8c15924635a8120ee79e3a57c86c54314c87e9877635048d91776d406bdfe8ecdc083', 200),
+     '1d8a1fa74a0cf655ef89fad7215d8670:20ab83bd1e50567dad529be32cded9996024cba9622847fe0bac013607a8c15924635a8120ee79e3a57c86c54314c87e9877635048d91776d406bdfe8ecdc083'),
     ('student-2', 'Sihle Kayise', 'student2@ctucareer.co.za', 'student',
-     '1d8a1fa74a0cf655ef89fad7215d8670:20ab83bd1e50567dad529be32cded9996024cba9622847fe0bac013607a8c15924635a8120ee79e3a57c86c54314c87e9877635048d91776d406bdfe8ecdc083', 200),
+     '1d8a1fa74a0cf655ef89fad7215d8670:20ab83bd1e50567dad529be32cded9996024cba9622847fe0bac013607a8c15924635a8120ee79e3a57c86c54314c87e9877635048d91776d406bdfe8ecdc083'),
     ('student-2d8e765f-a1e3-4af7-8ff1-45000d926566', 'Moe Green', '20240053@ctucareer.co.za', 'student',
-     '3b6856c00263f798e3642954f30e03a0:f0885a424d51402dd32b0570dc69925ee1a298572b674afb78f5841a7ac9a9f2ddaf20939dd1689298419f8d45d1415e3a3ef6b356086e93b6646f521ab044c0', 200),
+     '3b6856c00263f798e3642954f30e03a0:f0885a424d51402dd32b0570dc69925ee1a298572b674afb78f5841a7ac9a9f2ddaf20939dd1689298419f8d45d1415e3a3ef6b356086e93b6646f521ab044c0'),
     ('student-c122a892-6d0b-455f-a82d-39832d05e23e', 'Gedion Basson', '20240268@ctucareer.co.za', 'student',
-     '71666a56383e383bed190431b2d605e1:1413ff4237ea25e78d0949cf754eb67379fff76cfeb8544d2da827b7f6f49c1fade9dc5869a7c512117e9110649e40dafcd5e467387c56b4ac0c57375aa7d182', 200),
+     '71666a56383e383bed190431b2d605e1:1413ff4237ea25e78d0949cf754eb67379fff76cfeb8544d2da827b7f6f49c1fade9dc5869a7c512117e9110649e40dafcd5e467387c56b4ac0c57375aa7d182'),
     ('coordinator-1', 'Amenda Raganya', 'coordinator@ctucareer.co.za', 'coordinator',
-     'b5c8c7e4af3d02d63354e220df113974:7eb7dac7110199eb548859e9b40e93847a96caec02fcbd00950b86886de8f96e6b4d503596b91a302a6194b0e0acd05db2c8e34b2e154ef974f0e79481a7c386', 0),
+     'b5c8c7e4af3d02d63354e220df113974:7eb7dac7110199eb548859e9b40e93847a96caec02fcbd00950b86886de8f96e6b4d503596b91a302a6194b0e0acd05db2c8e34b2e154ef974f0e79481a7c386'),
     ('lecturer-1', 'Demo Lecturer', 'lecturer@ctucareer.co.za', 'lecturer',
-     '16733cf4e473f874b4e341a1bf0d2aad:21f58e36fb8ebfec5e50fa429f3cd76b5ab357730365fbbf2652b0bd803be300c1f37131360d69f97da94c7c0395c9731a50881fa448dee877509e175aab58aa', 0);
+     '16733cf4e473f874b4e341a1bf0d2aad:21f58e36fb8ebfec5e50fa429f3cd76b5ab357730365fbbf2652b0bd803be300c1f37131360d69f97da94c7c0395c9731a50881fa448dee877509e175aab58aa');
+
+-- Each student's WIL placement(s). Dylan has two: an earlier WIL 1 and the current WIL 2.
+INSERT INTO wil_placements (id, student_id, title, company_name, required_hours, start_date, created_at, updated_at) VALUES
+    ('placement-dylan-1', 'student-1', 'WIL 1', 'Cape Legal Services', 120, date('now', '-240 days'),
+     strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-240 days'), strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-240 days')),
+    ('placement-dylan-2', 'student-1', 'WIL 2', 'Harbour Admin Solutions', 200, date('now', '-30 days'),
+     strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-30 days'), strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-30 days')),
+    ('placement-sihle-1', 'student-2', 'WIL 1', 'Table Bay Engineering', 200, date('now', '-30 days'),
+     strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-30 days'), strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-30 days')),
+    ('placement-moe-1', 'student-2d8e765f-a1e3-4af7-8ff1-45000d926566', 'WIL 1', 'Southern IT Support', 200, date('now', '-45 days'),
+     strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-45 days'), strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-45 days')),
+    ('placement-gedion-1', 'student-c122a892-6d0b-455f-a82d-39832d05e23e', 'WIL 1', 'Northgate Warehousing', 200, date('now', '-30 days'),
+     strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-30 days'), strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-30 days'));
 
 INSERT INTO logbook_entries
-    (id, student_id, work_date, description, hours, evidence_file_name, status, mentor_email, created_at, updated_at, verified_at)
+    (id, placement_id, work_date, description, hours, evidence_file_name, status, mentor_email, created_at, updated_at, verified_at)
 VALUES
-    -- Dylan: recently verified work plus a draft -> On track
-    ('entry-1', 'student-1', date('now', '-4 days'),
+    -- Dylan, WIL 1: older verified work from the earlier placement
+    ('entry-8', 'placement-dylan-1', date('now', '-230 days'),
+     'Indexed and scanned client case files.', 8, NULL, 'verified', 'legal.mentor@host.co.za',
+     strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-230 days'), strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-229 days'), strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-229 days')),
+    ('entry-9', 'placement-dylan-1', date('now', '-225 days'),
+     'Drafted meeting minutes for the partners meeting.', 7, NULL, 'verified', 'legal.mentor@host.co.za',
+     strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-225 days'), strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-224 days'), strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-224 days')),
+
+    -- Dylan, WIL 2: recently verified work plus a draft -> On track
+    ('entry-1', 'placement-dylan-2', date('now', '-4 days'),
      'Assisted with customer intake forms and filing.', 8, NULL, 'verified', 'mentor@host.co.za',
      strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-4 days'), strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-3 days'), strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-3 days')),
-    ('entry-4', 'student-1', date('now', '-1 days'),
+    ('entry-4', 'placement-dylan-2', date('now', '-1 days'),
      'Updated the client contact list and archived closed files.', 6, NULL, 'draft', 'mentor@host.co.za',
      strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-1 days'), strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-1 days'), NULL),
 
     -- Sihle: one verified entry and one waiting for the mentor -> Awaiting verification
-    ('entry-3', 'student-2', date('now', '-12 days'),
+    ('entry-3', 'placement-sihle-1', date('now', '-12 days'),
      'Completed safety induction and site orientation.', 6, NULL, 'verified', 'mentor@host.co.za',
      strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-11 days'), strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-10 days'), strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-10 days')),
-    ('entry-2', 'student-2', date('now', '-2 days'),
+    ('entry-2', 'placement-sihle-1', date('now', '-2 days'),
      'Shadowed technician during equipment checks.', 7.5, NULL, 'pending_verification', 'mentor@host.co.za',
      strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-2 days'), strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-1 days'), NULL),
 
     -- Moe: last verified entry is older than 14 days -> Overdue
-    ('entry-5', 'student-2d8e765f-a1e3-4af7-8ff1-45000d926566', date('now', '-21 days'),
+    ('entry-5', 'placement-moe-1', date('now', '-21 days'),
      'Configured workstations for new staff members.', 8, NULL, 'verified', 'it.mentor@host.co.za',
      strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-21 days'), strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-20 days'), strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-20 days')),
 
     -- Gedion: verified entry plus a rejected one to resubmit -> On track
-    ('460d1500-5d1f-4015-b2dc-b4c1e45d29e0', 'student-c122a892-6d0b-455f-a82d-39832d05e23e', date('now', '-3 days'),
+    ('460d1500-5d1f-4015-b2dc-b4c1e45d29e0', 'placement-gedion-1', date('now', '-3 days'),
      'Built a stock-take spreadsheet for the warehouse team.', 3.5, NULL, 'verified', 'mentor@host.co.za',
      strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-3 days'), strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-2 days'), strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-2 days')),
-    ('entry-6', 'student-c122a892-6d0b-455f-a82d-39832d05e23e', date('now', '-2 days'),
+    ('entry-6', 'placement-gedion-1', date('now', '-2 days'),
      'Helped at the front desk.', 9, NULL, 'rejected', 'mentor@host.co.za',
      strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-2 days'), strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-1 days'), NULL),
     -- Submitted 10 days ago; the mentor never responded and the link has expired (can be resubmitted)
-    ('entry-7', 'student-c122a892-6d0b-455f-a82d-39832d05e23e', date('now', '-10 days'),
+    ('entry-7', 'placement-gedion-1', date('now', '-10 days'),
      'Prepared the monthly stock report.', 5, NULL, 'pending_verification', 'mentor@host.co.za',
      strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-10 days'), strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-10 days'), NULL);
 
 INSERT INTO verification_tokens (token, entry_id, expires_at, used_at, decision) VALUES
+    ('b8c0d2e4f6a8b0c2d4e6f8a0b2c4d6e8f0a2b4c6d8e0f2a4', 'entry-8',
+     strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-223 days'), strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-229 days'), 'approved'),
+    ('c9d1e3f5a7b9c1d3e5f7a9b1c3d5e7f9a1b3c5d7e9f1a3b5', 'entry-9',
+     strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-218 days'), strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-224 days'), 'approved'),
     ('a1f3c9e0b7d24e6f8a5c1b3d9e7f2a4c6b8d0e1f3a5c7b9d', 'entry-1',
      strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '+3 days'), strftime('%Y-%m-%dT%H:%M:%fZ', 'now', '-3 days'), 'approved'),
     ('b2e4d6f8a0c1e3f5b7d9a1c3e5f7b9d1a3c5e7f9b1d3a5c7', 'entry-3',

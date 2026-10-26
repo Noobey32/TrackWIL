@@ -2,8 +2,15 @@
 
 import { useActionState } from 'react';
 import { createLogbookEntryAction } from '@/app/actions/logbook';
+import type { WilPlacement } from '@/lib/types';
 
-export function NewEntryForm() {
+export function NewEntryForm({
+	placements,
+	defaultPlacementId,
+}: {
+	placements: WilPlacement[];
+	defaultPlacementId: string;
+}) {
 	const [state, formAction, isPending] = useActionState(
 		async (_previousState: { error?: string } | null, formData: FormData) => {
 			return createLogbookEntryAction(formData);
@@ -13,6 +20,24 @@ export function NewEntryForm() {
 
 	return (
 		<form action={formAction} className='space-y-4'>
+			<div>
+				<label htmlFor='placementId' className='mb-1 block text-sm font-medium'>
+					WIL placement
+				</label>
+				<select
+					id='placementId'
+					name='placementId'
+					required
+					defaultValue={defaultPlacementId}
+					className='w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm'
+				>
+					{placements.map((placement) => (
+						<option key={placement.id} value={placement.id}>
+							{placement.title} ({placement.companyName})
+						</option>
+					))}
+				</select>
+			</div>
 			<div>
 				<label htmlFor='workDate' className='mb-1 block text-sm font-medium'>
 					Work date
