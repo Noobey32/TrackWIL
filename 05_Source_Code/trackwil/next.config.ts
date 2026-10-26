@@ -5,6 +5,8 @@ const maxRequestBodySize = "11mb";
 
 const nextConfig: NextConfig = {
   experimental: {
+    // Remind during `next dev` / `next build` when a security fix for Next.js is available.
+    agentUpgrade: "security",
     serverActions: {
       bodySizeLimit: maxRequestBodySize,
     },
