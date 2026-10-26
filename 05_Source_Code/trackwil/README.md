@@ -56,7 +56,7 @@ The `data/*.json` files are the original prototype storage from the first sprint
 
 ## Testing
 
-The system test suite (TC-110 to TC-169 in the Test Cases workbook) runs against a running app and the database:
+The system test suite (TC-110 to TC-144 and TC-150 to TC-175 in the Test Cases workbook) runs against a running app and the database:
 
 ```bash
 npm run build

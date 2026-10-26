@@ -32,7 +32,10 @@ export default async function HomePage() {
         <div className="mt-6 rounded-md bg-zinc-50 p-3 text-xs text-zinc-600">
           <p className="font-medium text-zinc-800">Demo accounts</p>
           <p className="mt-1">student1@ctucareer.co.za / student123</p>
+          <p>student2@ctucareer.co.za / student123</p>
+          <p>student3@ctucareer.co.za / student123 (WIL completed)</p>
           <p>coordinator@ctucareer.co.za / coord123</p>
+          <p>lecturer@ctucareer.co.za / lecturer123</p>
         </div>
       </div>
     </div>

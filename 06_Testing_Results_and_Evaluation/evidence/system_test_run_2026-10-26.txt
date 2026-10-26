@@ -1,0 +1,126 @@
+PASS  TC-110  Sign in as student (email in capitals) opens /student
+      actual: redirect=/student; session cookie set
+PASS  TC-111  Wrong password shows an error and creates no session
+      actual: message="Invalid email or password."; cookie not set
+PASS  TC-112  Coordinator and lecturer sign in to /coordinator
+      actual: coordinator -> /coordinator; lecturer -> /coordinator
+PASS  TC-175  Sign-in page lists every demo account (DEF-05 retest)
+      actual: listed 5 of 5: student1@ctucareer.co.za, student2@ctucareer.co.za, student3@ctucareer.co.za, coordinator@ctucareer.co.za, lecturer@ctucareer.co.za
+PASS  TC-114  Each password rule is enforced at sign-up
+      actual: short1! -> "Password must be at least 8 characters."; lowercase1! -> "Password must include at least one uppercase letter."; UPPERCASE1! -> "Password must include at least one lowercase letter."; NoNumbers!! -> "Password must include at least one number."; NoSpecial12 -> "Password must include at least one special character."
+PASS  TC-115  Non-CTU and malformed student emails are rejected
+      actual: gmail -> "Please use a valid CTU email."; 1999@ctucareer.co.za -> "Please use a valid CTU email."
+PASS  TC-113  Valid sign-up creates a student account and signs in
+      actual: redirect=/student; user row role=student
+PASS  TC-116  Duplicate email (different letter case) is rejected
+      actual: message="An account with this email already exists."
+PASS  TC-117  Signed-out visitor is redirected from /student and /coordinator
+      actual: /student -> 307 /; /coordinator -> 307 /
+PASS  TC-118  Coordinator cannot open the student area
+      actual: status 307; redirected to /coordinator: true; student page content in response: false
+PASS  TC-119  Student cannot open the coordinator dashboard
+      actual: status 307; redirected to /student: true; dashboard content in response: false
+PASS  TC-120  Student cannot view another student's entry
+      actual: status 404; entry text shown: false
+PASS  TC-121  Forged or tampered session cookie is rejected (DEF-01 retest)
+      actual: unsigned 'coordinator-1' -> status 307, dashboard content in response: false; another user's signature -> status 307, dashboard content in response: false
+PASS  TC-150  Student adds a WIL placement with its own required hours
+      actual: redirect=/student/placements/348812c8-3305-4981-badc-0215b55718d8; title=WIL 1; company=Test Host Company; required hours=320
+PASS  TC-151  Invalid placement details are rejected
+      actual: 0 hours -> "Required hours must be a positive number."; -10 hours -> "Required hours must be a positive number."; 6000 hours -> "Required hours cannot be more than 5000."; no title -> "Title, company and start date are required."; no company -> "Title, company and start date are required."; no start date -> "Title, company and start date are required."; extra placements saved: 0
+PASS  TC-152  Student can edit their own placement but not another student's
+      actual: own placement now 300 hours; editing Sihle's placement -> "Placement not found."; Sihle's hours still 200
+PASS  TC-153  Entries can only be added to the student's own placement
+      actual: Sihle's placement -> "Choose one of your WIL placements for this entry."; unknown placement -> "Choose one of your WIL placements for this entry."
+PASS  TC-154  Student cannot open another student's placement
+      actual: Sihle's placement shown: false; own placement shown: true
+PASS  TC-156  New entry and edit placement pages open with the student's placements
+      actual: new entry page 200 (placement listed: true); edit page 200 (form shown: true)
+PASS  TC-122  Valid entry is saved as Draft
+      actual: redirect=/student/entries/32f187ac-fa67-438e-8af2-96abf4f39510; status=draft; hours=4.5
+PASS  TC-123  Invalid hours (30, 0, -2) and empty description are rejected
+      actual: hours=30 desc=yes -> "Hours for one day cannot be more than 24."; hours=0 desc=yes -> "Work date, description, and positive hours are required."; hours=-2 desc=yes -> "Work date, description, and positive hours are required."; hours=5 desc=empty -> "Work date, description, and positive hours are required."
+PASS  TC-124  PNG evidence is accepted and stored under a random name
+      actual: stored as 3deea831-24bb-4c4d-9e76-9205b3377697.png
+PASS  TC-125  Non-PDF/image evidence (.exe) is rejected
+      actual: message="Evidence must be a PDF or image file."
+PASS  TC-126  Evidence download is limited to the owner and staff
+      actual: owner 200; other student 403; signed out 401; coordinator 200; path traversal attempt 404
+PASS  TC-128  Entry without a mentor email cannot be submitted
+      actual: message="Add a mentor email on the entry before submitting."
+PASS  TC-127  Submitting creates a 48-character link valid for 7 days and sets Pending
+      actual: token length=48; status=pending_verification; expires after 7.00 days
+PASS  TC-129  A pending entry with an active link cannot be submitted again
+      actual: message="Only draft or rejected entries, or entries whose link has expired, can be submitted."; tokens for entry=1
+PASS  TC-120b  Student cannot submit another student's entry
+      actual: message="Entry not found."
+PASS  TC-130  Mentor link shows the entry without sign-in
+      actual: status 200; shows student name, description and Approve/Reject buttons
+PASS  TC-131  Approve sets the entry to Verified and records the time
+      actual: status=verified; verified_at=2026-10-26T11:41:43.421Z
+PASS  TC-133  A used link is refused and the entry is unchanged
+      actual: action -> "This verification link has already been used."; page shows "already used": true; status still verified
+PASS  TC-134  An unknown link is refused
+      actual: action -> "This verification link is invalid."; page status 404
+PASS  TC-135  An expired link is refused and the entry is unchanged
+      actual: action -> "This verification link has expired."; page mentions expiry: true; status pending_verification
+PASS  TC-132  Reject sets Rejected; the student can resubmit for a new link
+      actual: after reject: rejected; resubmitted with new link: true; status now pending_verification
+PASS  TC-136  Two simultaneous approvals on one link record only one decision
+      actual: successful decisions=1; second response "This verification link has already been used."; token decision=approved
+PASS  TC-137  Pending entry whose link expired can be resubmitted (DEF-02 retest)
+      actual: page shows expiry notice and Submit button: true; resubmitted with new link: true; status pending_verification
+PASS  TC-138  Placement logbook lists statuses and verified hours against its required hours
+      actual: expected "12.5 of 200 verified hours"; statuses shown: Draft, Pending verification, Verified
+PASS  TC-139  Dashboard shows each student's status, hours and pending count
+      actual: Dylan=On track; Moe=Overdue; Sihle=Awaiting verification; Gedion=Awaiting verification
+PASS  TC-166  Coordinator opens a student's profile with placements, logbook and documents
+      actual: status 200; both placements: true; logbook entry shown: true; document link shown: true; read-only (no upload/replace/remove): true
+PASS  TC-167  Lecturer can open a student's profile
+      actual: status 200; shows Sihle and her placement: true
+PASS  TC-168  Students cannot open the staff student profile
+      actual: status 307; Dylan's placement in the response to Sihle: false
+PASS  TC-169  Profile of an unknown user or a staff account is not found
+      actual: coordinator account -> 404; unknown id -> 404
+PASS  TC-171  Blocked pages send none of their data in the redirect response (DEF-07 retest)
+      actual: student -> /coordinator: 307, leaked nothing; made-up cookie -> /coordinator: 307, leaked nothing; student -> another student's profile: 307, leaked nothing; made-up cookie -> student profile: 307, leaked nothing; coordinator -> a student's placement page: 307, leaked nothing
+PASS  TC-170  Dashboard links to each student and shows missing documents
+      actual: profile links: true; Moe row shows missing: true; Sihle row shows missing: true
+PASS  TC-155  Verified hours are counted separately for each placement
+      actual: WIL 1 120 of 120 shown: true; WIL 2 8 of 200 shown: true
+PASS  TC-157  Student uploads an MOU for their placement
+      actual: stored as fff02138-1706-4f5a-a87d-6bb5af3d95e2.pdf; file on disk: true; name shown to users "Signed MOU.pdf"
+PASS  TC-158  Uploading a document again replaces the previous file
+      actual: MOU rows: 1; new file 303ca862-888c-47b7-ad65-d0b798b67e3f.pdf; old file removed: true
+PASS  TC-159  Attendance registers are kept once per semester
+      actual: registers before: 0; after uploading 2026-S2 twice and 2026-S1 once: 2026-S1, 2026-S2; "2026-S3" -> "Choose a semester between the placement start and now."; "2020-S1" -> "Choose a semester between the placement start and now."; "2099-S1" -> "Choose a semester between the placement start and now."; "" -> "Choose a semester between the placement start and now."
+PASS  TC-160  Invalid or oversized documents are rejected
+      actual: .exe file -> "Documents must be PDF, PNG or JPG files."; program renamed to .pdf -> "Documents must be PDF, PNG or JPG files."; PNG renamed to .pdf -> "Documents must be PDF, PNG or JPG files."; empty file -> "Choose a file to upload."; 10.5 MB PDF -> "The file is larger than 10 MB."; unknown document type -> "Choose which document you are uploading."; code of conduct rows saved: 0
+PASS  TC-161  Documents can only be uploaded to the student's own placement
+      actual: other student's placement -> "Placement not found."; coordinator upload accepted: false; letters on Sihle's placement: 0
+PASS  TC-162  Document download is limited to the owner and staff
+      actual: owner 200 (application/pdf); other student 403; signed out 401; coordinator 200; lecturer 200; unknown id 404
+PASS  TC-163  Students can remove their own documents only
+      actual: other student -> "Document not found." (document kept: true); owner -> row and file removed: true
+PASS  TC-164  Placement pages show each document as Uploaded or Missing
+      actual: Dylan WIL 2 complete (no Missing): true; Sihle shows Uploaded and Missing: true; placement card shows documents 3 of 3: true
+PASS  TC-165  A 9.5 MB scanned document uploads through the student page
+      actual: response: success; stored size 9961479 of 9961479 bytes
+PASS  TC-172  A placement is completed automatically when its verified hours reach the required hours
+      actual: 4-hour placement before approval completed: false; after approval: true (New entry button hidden: true); Lerato on dashboard: WIL completed; Dylan's profile marks WIL 1 completed: true
+PASS  TC-173  A completed placement is locked against entries, submissions, documents and edits
+      actual: new entry -> "This WIL placement is completed and locked. Add a new placement to continue."; submit remaining draft -> "This WIL placement is completed and locked. Add a new placement to continue."; upload document -> "This WIL placement is completed and locked. Add a new placement to continue."; edit placement -> "This WIL placement is completed and locked. Add a new placement to continue."; remove document (Dylan, WIL 1) -> "This WIL placement is completed and locked. Add a new placement to continue."; entries still 2; draft still draft; required hours still 4; Dylan's MOU kept: true
+PASS  TC-174  A student without a placement shows No placement; a new placement is not overdue
+      actual: before adding a placement: No placement; after adding one that starts today: On track
+PASS  TC-140  Timestamps are recorded automatically
+      actual: created 2026-10-26T11:41:43.279Z; verified 2026-10-26T11:41:43.421Z; link used 2026-10-26T11:41:43.421Z (approved)
+PASS  TC-141  Sign out removes the session and returns to sign-in
+      actual: redirect=/; cookie cleared: true; /student afterwards -> 307
+PASS  TC-142  Passwords are stored only as salted scrypt hashes
+      actual: stored value format: <32 hex salt>:<128 hex key>; plain password present: false
+PASS  TC-143  Database constraints reject invalid data
+      actual: hours = 30: rejected (CHECK constraint failed); unknown status: rejected (CHECK constraint failed); entry for missing placement: rejected (FOREIGN KEY constraint failed); placement with 0 required hours: rejected (CHECK constraint failed); placement for missing student: rejected (FOREIGN KEY constraint failed); unknown role: rejected (CHECK constraint failed); duplicate email (case): rejected (UNIQUE constraint failed); document with an unknown type: rejected (CHECK constraint failed); attendance register without a semester: rejected (CHECK constraint failed); second MOU for one placement: rejected (UNIQUE constraint failed); token used without decision: rejected (CHECK constraint failed)
+PASS  TC-144  Pages and actions respond within 2 seconds (10 requests each)
+      actual: / avg 3 ms, max 5 ms; /student avg 4 ms, max 4 ms; /student/placements/placement-sihle-1 avg 5 ms, max 7 ms; /student/entries/new avg 4 ms, max 4 ms; /coordinator avg 5 ms, max 7 ms; /coordinator/students/student-1 avg 5 ms, max 5 ms; /verify/<token> avg 3 ms, max 5 ms; create entry 10 ms; pages with errors: none
+
+62 automated tests: 62 passed, 0 failed
