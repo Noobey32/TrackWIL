@@ -33,7 +33,7 @@ Sessions are signed with a secret from `TRACKWIL_SESSION_SECRET`, or a random se
 3. Open the link in a private window (no login) and approve or reject.
    A ready-made open link for Sihle's pending entry is also seeded:
    `/verify/c3d5e7f9a1b3c5d7e9f1a3b5c7d9e1f3a5b7c9d1e3f5a7b9`
-4. Sign in as **coordinator@ctucareer.co.za** to see student status (on track, awaiting verification, overdue).
+4. Sign in as **coordinator@ctucareer.co.za** to see student status (on track, awaiting verification, overdue) and how many documents each student is missing. Click a student's name to open their profile: every placement with its hours, documents (view only) and logbook, including mentor emails and evidence.
 
 ## Data storage
 
@@ -55,7 +55,7 @@ The `data/*.json` files are the original prototype storage from the first sprint
 
 ## Testing
 
-The system test suite (TC-110 to TC-160 in the Test Cases workbook) runs against a running app and the database:
+The system test suite (TC-110 to TC-166 in the Test Cases workbook) runs against a running app and the database:
 
 ```bash
 npm run build

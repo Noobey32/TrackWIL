@@ -1,19 +1,12 @@
-import { redirect } from "next/navigation";
 import { AppHeader } from "@/components/app-header";
-import { getCurrentUser } from "@/lib/session";
+import { requireRole } from "@/lib/session";
 
 export default async function CoordinatorLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const user = await getCurrentUser();
-  if (!user) {
-    redirect("/");
-  }
-  if (user.role !== "coordinator" && user.role !== "lecturer") {
-    redirect("/student");
-  }
+  const user = await requireRole("coordinator", "lecturer");
 
   return (
     <div className="flex flex-1 flex-col">

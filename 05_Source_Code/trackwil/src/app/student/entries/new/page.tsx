@@ -1,18 +1,14 @@
 import Link from 'next/link';
-import { redirect } from 'next/navigation';
 import { NewEntryForm } from '@/components/new-entry-form';
 import { getPlacementsForStudent } from '@/lib/repository';
-import { getCurrentUser } from '@/lib/session';
+import { requireRole } from '@/lib/session';
 
 export default async function NewLogbookEntryPage({
 	searchParams,
 }: {
 	searchParams: Promise<{ placement?: string }>;
 }) {
-	const user = await getCurrentUser();
-	if (!user) {
-		redirect('/');
-	}
+	const user = await requireRole('student');
 
 	const placements = await getPlacementsForStudent(user.id);
 	const { placement: requestedPlacementId } = await searchParams;

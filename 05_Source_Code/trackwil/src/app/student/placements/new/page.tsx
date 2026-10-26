@@ -1,7 +1,10 @@
 import Link from 'next/link';
 import { PlacementForm } from '@/components/placement-form';
+import { requireRole } from '@/lib/session';
 
-export default function NewPlacementPage() {
+export default async function NewPlacementPage() {
+	await requireRole('student');
+
 	return (
 		<div className='mx-auto max-w-xl space-y-6'>
 			<div>
