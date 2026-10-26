@@ -9,7 +9,12 @@ import { randomUUID } from 'crypto';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import {
+	completedPlacementError,
+	placementCompletion,
+} from '@/lib/logbook-metrics';
+import {
 	createPlacement,
+	getEntriesForPlacement,
 	getPlacementById,
 	updatePlacement,
 } from '@/lib/repository';
@@ -85,6 +90,12 @@ export async function updatePlacementAction(formData: FormData) {
 	const placement = await getPlacementById(placementId);
 	if (!placement || placement.studentId !== user.id) {
 		return { error: 'Placement not found.' };
+	}
+	if (
+		placementCompletion(placement, await getEntriesForPlacement(placement.id))
+			.completed
+	) {
+		return { error: completedPlacementError };
 	}
 
 	const fields = readPlacementFields(formData);

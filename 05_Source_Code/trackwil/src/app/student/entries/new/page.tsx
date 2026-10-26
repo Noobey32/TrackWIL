@@ -1,6 +1,10 @@
 import Link from 'next/link';
 import { NewEntryForm } from '@/components/new-entry-form';
-import { getPlacementsForStudent } from '@/lib/repository';
+import { placementCompletion } from '@/lib/logbook-metrics';
+import {
+	getEntriesForStudent,
+	getPlacementsForStudent,
+} from '@/lib/repository';
 import { requireRole } from '@/lib/session';
 
 export default async function NewLogbookEntryPage({
@@ -10,7 +14,12 @@ export default async function NewLogbookEntryPage({
 }) {
 	const user = await requireRole('student');
 
-	const placements = await getPlacementsForStudent(user.id);
+	const allPlacements = await getPlacementsForStudent(user.id);
+	const entries = await getEntriesForStudent(user.id);
+	// Completed placements are locked, so only open ones can receive new entries.
+	const placements = allPlacements.filter(
+		(placement) => !placementCompletion(placement, entries).completed,
+	);
 	const { placement: requestedPlacementId } = await searchParams;
 	// Preselect the placement the student came from, otherwise the most recent one.
 	const defaultPlacement =
@@ -42,7 +51,9 @@ export default async function NewLogbookEntryPage({
 					/>
 				) : (
 					<p className='text-sm text-zinc-600'>
-						Add a WIL placement before you record entries.{' '}
+						{allPlacements.length > 0
+							? 'Your WIL placements are completed. Add your next WIL placement to record new entries.'
+							: 'Add a WIL placement before you record entries.'}{' '}
 						<Link href='/student/placements/new' className='underline'>
 							Add WIL placement
 						</Link>

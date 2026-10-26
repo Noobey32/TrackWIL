@@ -1,12 +1,17 @@
 import Link from 'next/link';
 import { HoursProgress } from '@/components/hours-progress';
+import { StudentStatusBadge } from '@/components/status-badge';
 import { documentProgress } from '@/lib/documents';
 import {
 	getDocumentsForStudent,
 	getEntriesForStudent,
 	getPlacementsForStudent,
 } from '@/lib/repository';
-import { sumVerifiedHours } from '@/lib/logbook-metrics';
+import {
+	currentPlacement,
+	placementCompletion,
+	sumVerifiedHours,
+} from '@/lib/logbook-metrics';
 import { requireRole } from '@/lib/session';
 
 export default async function StudentDashboardPage() {
@@ -15,6 +20,10 @@ export default async function StudentDashboardPage() {
 	const placements = await getPlacementsForStudent(user.id);
 	const entries = await getEntriesForStudent(user.id);
 	const documents = await getDocumentsForStudent(user.id);
+	const latest = currentPlacement(placements);
+	const latestCompletion = latest
+		? placementCompletion(latest, entries)
+		: null;
 
 	return (
 		<div className='space-y-8'>
@@ -35,6 +44,14 @@ export default async function StudentDashboardPage() {
 				</Link>
 			</section>
 
+			{latest && latestCompletion?.completed ? (
+				<p className='rounded-md border border-sky-200 bg-sky-50 p-4 text-sm text-sky-800'>
+					Your {latest.title} at {latest.companyName} is completed (
+					{latestCompletion.completedOn}). Add your next WIL placement to
+					continue logging hours.
+				</p>
+			) : null}
+
 			{placements.length === 0 ? (
 				<section className='rounded-lg border border-zinc-200 bg-white p-6 text-sm text-zinc-600'>
 					You have no WIL placements yet. Add your placement and its required
@@ -46,7 +63,12 @@ export default async function StudentDashboardPage() {
 						const placementEntries = entries.filter(
 							(entry) => entry.placementId === placement.id,
 						);
-						const paperwork = documentProgress(placement, documents);
+						const completion = placementCompletion(placement, entries);
+						const paperwork = documentProgress(
+							placement,
+							documents,
+							completion.completedOn,
+						);
 						return (
 							<Link
 								key={placement.id}
@@ -54,9 +76,14 @@ export default async function StudentDashboardPage() {
 								className='block space-y-3 rounded-lg border border-zinc-200 bg-white p-5 hover:border-zinc-400'
 							>
 								<div>
-									<p className='font-semibold text-zinc-900'>
-										{placement.title}
-									</p>
+									<div className='flex flex-wrap items-center gap-2'>
+										<p className='font-semibold text-zinc-900'>
+											{placement.title}
+										</p>
+										{completion.completed ? (
+											<StudentStatusBadge status='wil_completed' />
+										) : null}
+									</div>
 									<p className='text-sm text-zinc-600'>
 										{placement.companyName} · started {placement.startDate}
 									</p>

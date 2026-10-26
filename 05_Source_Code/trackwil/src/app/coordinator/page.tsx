@@ -7,7 +7,11 @@ import {
 	getPlacements,
 	getUsers,
 } from '@/lib/repository';
-import { studentOverviewStatus, sumVerifiedHours } from '@/lib/logbook-metrics';
+import {
+	placementCompletion,
+	studentOverviewStatus,
+	sumVerifiedHours,
+} from '@/lib/logbook-metrics';
 import { requireRole } from '@/lib/session';
 
 export default async function CoordinatorDashboardPage() {
@@ -23,12 +27,12 @@ export default async function CoordinatorDashboardPage() {
 			const entries = allEntries.filter(
 				(entry) => entry.studentId === student.id,
 			);
-			const status = studentOverviewStatus(entries);
 			const verifiedHours = sumVerifiedHours(entries);
 			// Totals across all of the student's WIL placements.
 			const placements = allPlacements.filter(
 				(placement) => placement.studentId === student.id,
 			);
+			const status = studentOverviewStatus(placements, entries);
 			const requiredHours = placements.reduce(
 				(total, placement) => total + placement.requiredHours,
 				0,
@@ -38,7 +42,13 @@ export default async function CoordinatorDashboardPage() {
 			).length;
 			// Once-off documents plus one attendance register per semester, for every placement.
 			const documents = placements
-				.map((placement) => documentProgress(placement, allDocuments))
+				.map((placement) =>
+					documentProgress(
+						placement,
+						allDocuments,
+						placementCompletion(placement, entries).completedOn,
+					),
+				)
 				.reduce(
 					(total, progress) => ({
 						uploaded:

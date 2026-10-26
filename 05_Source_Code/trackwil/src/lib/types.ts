@@ -57,7 +57,9 @@ export type VerificationToken = {
 export type StudentOverviewStatus =
 	| 'on_track'
 	| 'awaiting_verification'
-	| 'overdue';
+	| 'overdue'
+	| 'wil_completed'
+	| 'no_placement';
 
 
 export type DocumentType =

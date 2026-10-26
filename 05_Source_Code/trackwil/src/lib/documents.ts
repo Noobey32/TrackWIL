@@ -80,14 +80,14 @@ export function semesterLabel(semester: string): string {
 
 /**
  * Semesters a placement can have an attendance register for: from the semester it
- * started up to the current one, newest first.
+ * started up to the current one (or the one it was completed in), newest first.
  */
 export function semestersForPlacement(
 	startDate: string,
-	now: Date = new Date(),
+	until: string | Date | null = null,
 ): string[] {
 	const first = semesterOf(startDate);
-	const current = semesterOf(now);
+	const current = semesterOf(until ?? new Date());
 	const semesters: string[] = [];
 	let [year, half] = first.split('-S').map(Number);
 	for (
@@ -108,8 +108,11 @@ export function semestersForPlacement(
 export function attendanceSemesters(
 	placement: WilPlacement,
 	documents: PlacementDocument[],
+	completedOn: string | null = null,
 ): string[] {
-	const semesters = new Set(semestersForPlacement(placement.startDate));
+	const semesters = new Set(
+		semestersForPlacement(placement.startDate, completedOn),
+	);
 	for (const document of documents) {
 		if (document.documentType === 'attendance_register' && document.semester) {
 			semesters.add(document.semester);
@@ -118,15 +121,22 @@ export function attendanceSemesters(
 	return [...semesters].sort().reverse();
 }
 
-/** How much of a placement's paperwork has been uploaded. */
+/**
+ * How much of a placement's paperwork has been uploaded. A completed placement only
+ * expects attendance registers up to the semester it was completed in.
+ */
 export function documentProgress(
 	placement: WilPlacement,
 	documents: PlacementDocument[],
+	completedOn: string | null = null,
 ) {
 	const placementDocuments = documents.filter(
 		(document) => document.placementId === placement.id,
 	);
-	const expectedSemesters = semestersForPlacement(placement.startDate);
+	const expectedSemesters = semestersForPlacement(
+		placement.startDate,
+		completedOn,
+	);
 	return {
 		uploadedOnce: oncePerPlacementDocumentTypes.filter((documentType) =>
 			placementDocuments.some((document) => document.documentType === documentType),

@@ -12,10 +12,15 @@ import path from 'path';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { maxDocumentBytes } from '@/lib/documents';
+import {
+	completedPlacementError,
+	placementCompletion,
+} from '@/lib/logbook-metrics';
 import { uploadsDirectory } from '@/lib/paths';
 import {
 	createLogbookEntry,
 	getActiveVerificationTokenForEntry,
+	getEntriesForPlacement,
 	getLogbookEntryById,
 	getPlacementById,
 	submitEntryForVerification,
@@ -40,6 +45,12 @@ export async function createLogbookEntryAction(formData: FormData) {
 	const placement = await getPlacementById(placementId);
 	if (!placement || placement.studentId !== user.id) {
 		return { error: 'Choose one of your WIL placements for this entry.' };
+	}
+	if (
+		placementCompletion(placement, await getEntriesForPlacement(placement.id))
+			.completed
+	) {
+		return { error: completedPlacementError };
 	}
 
 	const workDate = String(formData.get('workDate') ?? '').trim();
@@ -109,6 +120,14 @@ export async function submitEntryForVerificationAction(entryId: string) {
 	const entry = await getLogbookEntryById(entryId);
 	if (!entry || entry.studentId !== user.id) {
 		return { error: 'Entry not found.' };
+	}
+	const placement = await getPlacementById(entry.placementId);
+	if (
+		placement &&
+		placementCompletion(placement, await getEntriesForPlacement(placement.id))
+			.completed
+	) {
+		return { error: completedPlacementError };
 	}
 	// A pending entry whose link expired before the mentor responded may be sent again.
 	const isPendingWithoutActiveLink =

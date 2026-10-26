@@ -5,6 +5,8 @@ const overviewStyles: Record<StudentOverviewStatus, string> = {
   on_track: "bg-emerald-100 text-emerald-800",
   awaiting_verification: "bg-amber-100 text-amber-800",
   overdue: "bg-rose-100 text-rose-800",
+  wil_completed: "bg-sky-100 text-sky-800",
+  no_placement: "bg-zinc-100 text-zinc-700",
 };
 
 const entryStyles: Record<LogbookEntry["status"], string> = {

@@ -20,6 +20,7 @@ Open [http://localhost:3000](http://localhost:3000).
 | ----------- | --------------------------- | ---------- |
 | Student     | student1@ctucareer.co.za    | student123 |
 | Student     | student2@ctucareer.co.za    | student123 |
+| Student     | student3@ctucareer.co.za    | student123 |
 | Coordinator | coordinator@ctucareer.co.za | coord123   |
 | Lecturer    | lecturer@ctucareer.co.za    | lecturer123 |
 
@@ -27,13 +28,13 @@ Sessions are signed with a secret from `TRACKWIL_SESSION_SECRET`, or a random se
 
 ## Demo flow
 
-1. Sign in as **student1@ctucareer.co.za**. Dylan has two WIL placements (WIL 1 and WIL 2), each with its own required hours. Open **WIL 2** and create a logbook entry (optionally upload evidence), or add a new placement with **Add WIL placement**.
+1. Sign in as **student1@ctucareer.co.za**. Dylan has two WIL placements, each with its own required hours: **WIL 1** is completed (its verified hours reached the required 120) and locked, and **WIL 2** is in progress. Open **WIL 2** and create a logbook entry (optionally upload evidence), or add a new placement with **Add WIL placement**. **student3@ctucareer.co.za** (Lerato) has completed their only placement, so they are prompted to add the next one before they can log more hours.
 2. Open the entry and **Submit for verification**, then copy the mentor link.
-   On the placement page, the **Documents** section shows the MOU, Commencement Letter, Code of Conduct and one Attendance Register per semester. Dylan's WIL 2 paperwork is complete; WIL 1 is missing a register, so try uploading one (PDF, PNG or JPG, up to 10 MB).
+   On the placement page, the **Documents** section shows the MOU, Commencement Letter, Code of Conduct and one Attendance Register per semester. Sign in as **student2@ctucareer.co.za** (Sihle), who has only the MOU, to try uploading the others (PDF, PNG or JPG, up to 10 MB).
 3. Open the link in a private window (no login) and approve or reject.
    A ready-made open link for Sihle's pending entry is also seeded:
    `/verify/c3d5e7f9a1b3c5d7e9f1a3b5c7d9e1f3a5b7c9d1e3f5a7b9`
-4. Sign in as **coordinator@ctucareer.co.za** to see student status (on track, awaiting verification, overdue) and how many documents each student is missing. Click a student's name to open their profile: every placement with its hours, documents (view only) and logbook, including mentor emails and evidence.
+4. Sign in as **coordinator@ctucareer.co.za** to see each student's status for their current placement (On track, Awaiting verification, Overdue, WIL completed or No placement) and how many documents each student is missing. Click a student's name to open their profile: every placement with its hours, documents (view only) and logbook, including mentor emails and evidence.
 
 ## Data storage
 
@@ -55,7 +56,7 @@ The `data/*.json` files are the original prototype storage from the first sprint
 
 ## Testing
 
-The system test suite (TC-110 to TC-166 in the Test Cases workbook) runs against a running app and the database:
+The system test suite (TC-110 to TC-169 in the Test Cases workbook) runs against a running app and the database:
 
 ```bash
 npm run build
