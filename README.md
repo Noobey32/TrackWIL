@@ -1,6 +1,6 @@
 # TrackWIL - Work-Integrated Learning Management System
 
-TrackWIL is the SPM622 Capstone Project of Group 3 (CTU Training Solutions, Cape Town Campus). It replaces the paper, PDF and email workflow that occupational students use to keep their Work-Integrated Learning (WIL) logbooks.
+TrackWIL is a Work-Integrated Learning logbook system built by Group 3 for SPM622 (Software Project Management) at CTU Training Solutions, Cape Town Campus. It replaces the paper, PDF and email workflow that occupational students use to keep their Work-Integrated Learning (WIL) logbooks.
 
 ## About The Project
 
@@ -8,7 +8,7 @@ TrackWIL is the SPM622 Capstone Project of Group 3 (CTU Training Solutions, Cape
 * **Workplace mentors** verify an entry from a secure one-time link, without needing an account. The link expires after 7 days and can be used only once.
 * **WIL coordinators and lecturers** see every student on one dashboard, labelled by their current placement as *On track*, *Awaiting verification*, *Overdue*, *WIL completed* or *No placement*, with verified hours, pending verifications and missing documents. Selecting a student opens their profile: each placement's hours, documents and full logbook.
 
-## Current Submission (Week 4)
+## Latest Submission (Week 4)
 
 Everything for Weekly Submission 4 (23 October 2026) is in the **[Week 4 Submission](Week%204%20Submission/)** folder:
 
@@ -44,7 +44,7 @@ Open http://localhost:3000. The SQLite database is created and filled with synth
 
 * **Application:** Next.js 16 (App Router, Server Actions), React 19, TypeScript, Tailwind CSS 4
 * **Database:** SQLite through Node.js's built-in `node:sqlite` module, with primary and foreign keys, CHECK constraints and transactions
-* **Security:** salted scrypt password hashes, signed HttpOnly session cookies, server-side role checks on every protected page, 48-character one-time verification tokens, restricted evidence and document uploads (type, content and size checks) and downloads
+* **Security:** salted scrypt password hashes, signed HttpOnly session cookies, server-side role checks on every protected page, 48-character one-time verification tokens, restricted evidence and document uploads (type, content and size checks) and downloads, and security headers on every response (no framing, no MIME sniffing, a strict referrer policy)
 * **Architecture:** three layers (presentation, Server Actions, repository and database) in a single Next.js application
 * **Version control:** Git and GitHub, with name/task branches merged through pull requests
 
@@ -52,6 +52,7 @@ Open http://localhost:3000. The SQLite database is created and filled with synth
 
 | Folder | Contents |
 | ------ | -------- |
+| `Project Proposal` | The project proposal and topic acceptance |
 | `00_Project_Administration` | Topic acceptance, group declaration and roles, ethical clearance |
 | `01_Introduction` - `03_Requirements_and_Methodology` | Chapters 1 to 3 and the Software Requirements Specification |
 | `04_System_Design_and_Development` | Chapter 4, Database Design document, draw.io diagrams (with PNG exports) and UI screenshots |
@@ -78,9 +79,9 @@ Open http://localhost:3000. The SQLite database is created and filled with synth
 * **2 October 2026:** Project proposal and topic acceptance *(done)*
 * **9 October 2026:** Chapters 1 and 2, Project Charter, Ethical Clearance, GitHub repository *(done)*
 * **16 October 2026:** Chapter 3, SRS, system design and development evidence *(done)*
-* **23 October 2026:** Working application, Chapters 4 and 5, testing workbooks, dissertation draft, presentation plan *(current submission)*
-* **29 October 2026:** Final dissertation, working application, evidence folders and live demonstration
+* **23 October 2026:** Working application, Chapters 4 and 5, testing workbooks, dissertation draft, presentation plan *(done)*
+* **29 October 2026:** Final dissertation, working application, evidence folders and live demonstration *(next)*
 
 ---
 
-*CTU Training Solutions (PTY) Ltd - Capstone Project 2026*
+*TrackWIL - Group 3, SPM622, CTU Training Solutions (PTY) Ltd, 2026*

@@ -1,6 +1,6 @@
 /**
  * Password storage uses scrypt with a per-user salt.
- * Hashes are stored as `salt:derivedKey` in users.json; plain passwords are never saved.
+ * Hashes are stored as `salt:derivedKey` in the users table; plain passwords are never saved.
  */
 import { randomBytes, scryptSync, timingSafeEqual } from "crypto";
 

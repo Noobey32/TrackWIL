@@ -1,6 +1,6 @@
 # TrackWIL (Next.js)
 
-Capstone MVP for WIL logbook tracking: students add their WIL placements, log hours and upload their WIL documents for each one, mentors verify via a link (no account), coordinators see status at a glance.
+TrackWIL is a Work-Integrated Learning (WIL) logbook app: students add their WIL placements, log hours and upload their WIL documents for each one, mentors verify via a link (no account), coordinators see status at a glance.
 
 ## Setup
 
@@ -24,7 +24,11 @@ Open [http://localhost:3000](http://localhost:3000).
 | Coordinator | coordinator@ctucareer.co.za | coord123   |
 | Lecturer    | lecturer@ctucareer.co.za    | lecturer123 |
 
-Sessions are signed with a secret from `TRACKWIL_SESSION_SECRET`, or a random secret generated once into `data/session-secret` (ignored by git).
+## Settings
+
+Sessions are signed with a secret from `TRACKWIL_SESSION_SECRET`, or a random secret generated once into `data/session-secret` (ignored by git). To set it yourself, copy `.env.example` to `.env.local` and fill it in.
+
+Every response carries security headers (set in `next.config.ts`): the app cannot be framed by other sites, browsers may not guess content types, full URLs are not sent to other sites, and camera, microphone and location access are turned off. The `X-Powered-By` header is not sent.
 
 ## Demo flow
 
@@ -52,8 +56,6 @@ To start again from the seed data, stop the dev server and run the command below
 npm run db:reset
 ```
 
-The `data/*.json` files are the original prototype storage from the first sprint. They are kept for reference and are no longer read by the app.
-
 ## Testing
 
 The system test suite (TC-110 to TC-144 and TC-150 to TC-175 in the Test Cases workbook) runs against a running app and the database:
@@ -65,13 +67,19 @@ npm run test:system               # terminal 2 (pass a URL if not http://localho
 npm run db:reset                  # afterwards: the tests add entries to the database
 ```
 
+The results of the last run are written to `tests/last-results.json` (ignored by git).
+
 ## Project layout
 
-- `database/`: SQL schema and seed scripts
+- `database/`: SQL schema, seed script and the demo WIL documents
 - `scripts/reset-db.mjs`: rebuilds the database from those scripts
-- `src/lib/`: types, SQLite connection (`db.ts`), repository, auth session, metrics
-- `src/app/actions/`: server actions (login, WIL placements, logbook, documents, mentor verify)
-- `src/app/student/`: student dashboard and entries
-- `src/app/coordinator/`: coordinator dashboard
+- `tests/system-tests.mjs`: the automated system tests
+- `src/proxy.ts`: sends signed-out visitors on student and coordinator pages to the login page
+- `src/lib/`: types, SQLite connection (`db.ts`), repository, auth session, password hashing, WIL document rules (`documents.ts`), metrics and statuses (`logbook-metrics.ts`)
+- `src/app/actions/`: server actions (login and sign-up, WIL placements, logbook, documents, mentor verify)
+- `src/app/api/`: protected downloads of evidence and WIL documents
+- `src/app/student/`: student dashboard, placements (`placements/`: new, view, edit) and entries
+- `src/app/coordinator/`: coordinator dashboard and student profiles (`students/[id]/`)
 - `src/app/verify/[token]/`: public mentor verification page
-
+- `src/app/signup/`: student sign-up
+- `src/components/`: shared UI components (forms, status badges, hours progress, documents)
