@@ -17,7 +17,6 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   // Do not advertise the framework in an X-Powered-By header.
   poweredByHeader: false,
-  allowedDevOrigins: ['10.5.0.191'],
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },
